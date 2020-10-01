@@ -1,11 +1,11 @@
-name: 'Branch Release Drafter'
+name: 'Github Branch Release Drafter'
 description: 'Drafts your next release notes from pull requests as they are merged into relevant branches'
 runs:
   using: 'docker'
   image: 'Dockerfile'
 branding:
   icon: droplet
-  color: salmon
+  color: green
 inputs:
   name:
     description: |
