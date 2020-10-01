@@ -18,6 +18,9 @@
 
 package net.webtide.github.releasedrafter;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
 
 public class Main
@@ -46,5 +49,32 @@ public class Main
             .filter(entry -> entry.getKey().toString().matches("^(java|jdk|sun|user|file|os|sun)\\..*"))
             .sorted(Comparator.comparing(e -> e.getKey().toString()))
             .forEach(entry -> System.err.printf("system.property[%s] = \"%s\"%n", entry.getKey(), entry.getValue()));
+
+        String eventName = System.getenv("GITHUB_EVENT_NAME");
+        if (eventName != null)
+        {
+            String eventPathName = System.getenv("GITHUB_EVENT_PATH");
+            if (eventPathName != null)
+            {
+                Path eventPath = Paths.get(eventPathName);
+                try
+                {
+                    String contents = IO.toString(eventPath);
+                    System.out.println(contents);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            else
+            {
+                System.out.println("No github event path declared");
+            }
+        }
+        else
+        {
+            System.out.println("No github event name/type declared");
+        }
     }
 }
