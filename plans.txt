@@ -2,10 +2,11 @@ Create multiple projects
 
 /github-branch-release-drafter/
   /core/
-     The mainline code.
+     The mainline code - java code
      Can produce a uber-jar
   /docker/
      A docker image with the core functionality/jar pushed to hub.docker.com
+     This is based on AdoptOpenJDK with the above uber-jar only.
   /webhook-server/
      A server, with Jetty, that can respond to web-hooks from github
      and trigger a release-drafter update.

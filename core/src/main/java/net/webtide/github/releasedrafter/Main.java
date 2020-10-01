@@ -19,62 +19,131 @@
 package net.webtide.github.releasedrafter;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
+import java.util.Map;
+
+import net.webtide.github.releasedrafter.logging.Logging;
+import org.kohsuke.github.GHBranch;
+import org.kohsuke.github.GHCommit;
+import org.kohsuke.github.GHRef;
+import org.kohsuke.github.GHRelease;
+import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHTag;
+import org.kohsuke.github.GitHub;
+import org.kohsuke.github.PagedIterable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Main
 {
-    public static void main(String[] args)
+    static
     {
-        // Try to figure out how / what is passed into docker image ...
-        if (args == null)
+        Logging.config();
+    }
+
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+
+    public static void main(String[] commandLine)
+    {
+        Args args = new Args(commandLine);
+        boolean showBranches = args.containsKey("show-branches");
+        boolean showReleases = args.containsKey("show-releases");
+        boolean showTags = args.containsKey("show-tags");
+        boolean showRefs = args.containsKey("show-refs");
+        String repoName = args.get("repo");
+
+        if (repoName == null)
         {
-            System.out.println("There are no command line arguments");
+            System.err.println("No repo provided");
+            System.err.println("Usage: release-drafter.jar [options] [repo-ref]");
+            System.exit(-1);
         }
-        else
+
+        try
         {
-            System.out.printf("There are %d args%n", args.length);
-            for (int i = 0; i < args.length; i++)
+            LOG.info("Connecting to GitHub");
+            GitHub github = GitHub.connect();
+
+            GitHubUtil.showCurrentRateLimit(github);
+
+            LOG.info("Fetching repo to [{}]", repoName);
+            GHRepository repo = github.getRepository(repoName);
+
+            if (showRefs)
             {
-                System.out.printf("args[%d] = \"%s\"%n", i, args[i]);
-            }
-        }
-
-        System.getenv().entrySet().stream()
-            .sorted(Comparator.comparing(e -> e.getKey()))
-            .forEach(entry -> System.err.printf("env[%s] = \"%s\"%n", entry.getKey(), entry.getValue()));
-
-        System.getProperties().entrySet().stream()
-            .filter(entry -> entry.getKey().toString().matches("^(java|jdk|sun|user|file|os|sun)\\..*"))
-            .sorted(Comparator.comparing(e -> e.getKey().toString()))
-            .forEach(entry -> System.err.printf("system.property[%s] = \"%s\"%n", entry.getKey(), entry.getValue()));
-
-        String eventName = System.getenv("GITHUB_EVENT_NAME");
-        if (eventName != null)
-        {
-            String eventPathName = System.getenv("GITHUB_EVENT_PATH");
-            if (eventPathName != null)
-            {
-                Path eventPath = Paths.get(eventPathName);
-                try
+                LOG.info("--- Refs");
+                for (GHRef ref : repo.getRefs())
                 {
-                    String contents = IO.toString(eventPath);
-                    System.out.println(contents);
-                }
-                catch (IOException e)
-                {
-                    e.printStackTrace();
+                    LOG.info("ref: {}", ref.getRef());
                 }
             }
-            else
+
+            if (showBranches)
             {
-                System.out.println("No github event path declared");
+                LOG.info("--- Branches");
+                String defaultBranch = repo.getDefaultBranch();
+                Map<String, GHBranch> branches = repo.getBranches();
+                branches.forEach((name, branch) ->
+                    {
+                        String label = "";
+                        if (name.equalsIgnoreCase(defaultBranch))
+                            label = "DEFAULT";
+                        String sha1 = branch.getSHA1();
+                        String commitDate = "n/a";
+                        try
+                        {
+                            GHCommit commit = repo.getCommit(sha1);
+                            commitDate = commit.getCommitDate().toString();
+                        }
+                        catch (IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+                        LOG.info("branch: {} ({}): {} ({})", name, label, sha1, commitDate);
+                    }
+                );
+            }
+
+            if (showReleases)
+            {
+                LOG.info("--- Releases");
+                int maxReleasesToShow = 100;
+                PagedIterable<GHRelease> releases = repo.listReleases();
+                for (GHRelease release : releases.withPageSize(100))
+                {
+                    if (maxReleasesToShow <= 0)
+                        break;
+                    String label = "";
+                    if (release.isDraft())
+                        label += " DRAFT";
+                    if (release.isPrerelease())
+                        label += " PRERELEASE";
+                    LOG.info("Release {} tag=[{}] targetCommitish=[{}] {}",
+                        release.getName(),
+                        release.getTagName(),
+                        release.getTargetCommitish(),
+                        label);
+                    maxReleasesToShow--;
+                }
+            }
+
+            if (showTags)
+            {
+                LOG.info("--- Tags");
+                PagedIterable<GHTag> tags = repo.listTags();
+                int maxTagsToShow = 100;
+                for (GHTag tag : tags)
+                {
+                    if (maxTagsToShow <= 0)
+                        break;
+                    GHCommit commit = tag.getCommit();
+                    LOG.info("Tag {}: {}", tag.getName(), commit.getSHA1());
+                    maxTagsToShow--;
+                }
             }
         }
-        else
+        catch (IOException e)
         {
-            System.out.println("No github event name/type declared");
+            LOG.warn("Oops", e);
         }
     }
 }

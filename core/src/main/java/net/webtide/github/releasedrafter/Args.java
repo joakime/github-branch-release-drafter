@@ -18,6 +18,29 @@
 
 package net.webtide.github.releasedrafter;
 
-public class ListReleases
+import java.util.HashMap;
+
+public class Args extends HashMap<String, String>
 {
+    public Args(String... args)
+    {
+        super();
+        for (String arg : args)
+        {
+            if (!arg.startsWith("--"))
+            {
+                throw new IllegalArgumentException("Unrecognized option: " + arg);
+            }
+
+            int idxEqual = arg.indexOf('=');
+            if (idxEqual > 0)
+            {
+                put(arg.substring(2, idxEqual), arg.substring(idxEqual + 1));
+            }
+            else
+            {
+                put(arg.substring(2), null);
+            }
+        }
+    }
 }
