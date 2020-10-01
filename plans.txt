@@ -1,0 +1,13 @@
+Create multiple projects
+
+/github-branch-release-drafter/
+  /core/
+     The mainline code.
+     Can produce a uber-jar
+  /docker/
+     A docker image with the core functionality/jar pushed to hub.docker.com
+  /webhook-server/
+     A server, with Jetty, that can respond to web-hooks from github
+     and trigger a release-drafter update.
+/action.yml - the main hook for the Github hosted action
+/Dockerfile - using the image from hub.docker.com as-is

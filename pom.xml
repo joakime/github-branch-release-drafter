@@ -6,6 +6,7 @@
 
   <groupId>net.webtide.github.releasedrafter</groupId>
   <artifactId>github-branch-release-drafter</artifactId>
+  <packaging>pom</packaging>
   <version>1.0-SNAPSHOT</version>
 
   <description>MultiBranch GitHub Release Drafter</description>
@@ -31,15 +32,14 @@
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <github.api.version>1.116</github.api.version>
+    <jetty.version>9.4.31.v20200723</jetty.version>
+    <jetty.test.version>5.5</jetty.test.version>
   </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>github-api</artifactId>
-      <version>${github.api.version}</version>
-    </dependency>
-  </dependencies>
+  <modules>
+    <module>core</module>
+    <module>webhook-server</module>
+  </modules>
 
   <build>
     <pluginManagement>
@@ -97,17 +97,6 @@
       </plugins>
     </pluginManagement>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>net.webtide.github.releasedrafter.Main</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
@@ -181,6 +170,9 @@
               <includes>
                 <include>**/*.java</include>
               </includes>
+              <excludes>
+                <exclude>.mvn/**/*.java</exclude>
+              </excludes>
             </configuration>
           </execution>
         </executions>
