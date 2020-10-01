@@ -4,6 +4,22 @@ Create multiple projects
   /core/
      The mainline code - java code
      Can produce a uber-jar
+
+     For Github Action workflow.
+     When env:GITHUB_EVENT_NAME is present, that indicates an event to process.
+     Use env:GITHUB_EVENT_PATH to find exact Event details.
+
+     For Push ...
+       Look for "ref": "refs/heads/master",
+       That tells us what Draft/Release (target-branch) to update.
+
+       Use head_commit > id to find the commit sha to search TO.
+       Find the prior version to search FROM.
+       Find all commits in range that also have pull requests.
+
+       Use pull request ids, titles, labels to present changelog in Draft.
+
+
   /docker/
      A docker image with the core functionality/jar pushed to hub.docker.com
      This is based on AdoptOpenJDK with the above uber-jar only.
