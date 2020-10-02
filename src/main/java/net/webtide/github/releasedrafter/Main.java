@@ -49,7 +49,7 @@ public class Main
         boolean showReleases = args.containsKey("show-releases");
         boolean showTags = args.containsKey("show-tags");
         boolean showRefs = args.containsKey("show-refs");
-        String repoName = args.get("repo");
+        String repoName = args.getRequired("repo");
 
         if (repoName == null)
         {

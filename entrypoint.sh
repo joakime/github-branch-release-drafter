@@ -3,9 +3,5 @@
 export JAVA_HOME=/opt/java/openjdk
 export PATH=$JAVA_HOME/bin:$PATH
 
-echo "Executing java release-drafter"
-java -jar /app/release-drafter.jar $@
-
-echo "Args $@"
-time=$(date)
-echo "::set-output name=time::$time"
+echo "Executing java branch-release-drafter"
+java -jar /app/branch-release-drafter.jar --repo=${GITHUB_REPOSITORY} --show-tags --show-branches --show-refs --show-releases @

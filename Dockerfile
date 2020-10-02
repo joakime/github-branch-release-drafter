@@ -7,7 +7,11 @@ LABEL "com.github.actions.description"="Drafts your next release notes from pull
 LABEL "com.github.actions.icon"="droplet"
 LABEL "com.github.actions.color"="salmon"
 WORKDIR /app
-RUN wget -O /app/release-drafter.jar \
-  https://github.com/joakime/github-branch-release-drafter/releases/download/0.0.1/github-branch-release-drafter-1.0-SNAPSHOT.jar
+COPY build.sh /app/build/
+COPY version.txt /app/build/
+COPY mvnw /app/build/
+COPY .mvn /app/build/
+COPY src /app/build/
+RUN /app/build/build.sh
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
