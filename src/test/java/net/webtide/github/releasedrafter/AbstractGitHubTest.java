@@ -30,6 +30,6 @@ public class AbstractGitHubTest
     @BeforeAll
     public static void connectToGithub() throws IOException
     {
-        github = GitHub.connect();
+        github = GitHubUtil.smartConnect();
     }
 }

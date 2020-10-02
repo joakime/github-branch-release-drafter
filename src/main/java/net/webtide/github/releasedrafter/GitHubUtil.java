@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.time.Instant;
 
 import net.webtide.github.releasedrafter.logging.Logging;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.github.GHRateLimit;
 import org.kohsuke.github.GitHub;
+import org.kohsuke.github.GitHubBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,21 @@ public final class GitHubUtil
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(GitHubUtil.class);
+
+    public static GitHub smartConnect() throws IOException
+    {
+        String githubAppToken = System.getenv("GITHUB_TOKEN");
+        if (StringUtils.isNotBlank(githubAppToken))
+        {
+            LOG.info("Connecting to GitHub with AppInstallation Token");
+            return new GitHubBuilder().withAppInstallationToken(githubAppToken).build();
+        }
+        else
+        {
+            LOG.info("Connecting to GitHub with environment / properties file configuration");
+            return GitHub.connect();
+        }
+    }
 
     public static void showCurrentRateLimit(GitHub github) throws IOException
     {

@@ -56,8 +56,7 @@ public class QueryPullRequests
             String from = args.getRequired("from");
             String to = args.getRequired("to");
 
-            LOG.info("Connecting to GitHub");
-            GitHub github = GitHub.connect();
+            GitHub github = GitHubUtil.smartConnect();
             GitHubUtil.showCurrentRateLimit(github);
 
             LOG.info("Fetching repo to [{}]", repoName);

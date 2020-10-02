@@ -61,7 +61,7 @@ public class Main
         try
         {
             LOG.info("Connecting to GitHub");
-            GitHub github = GitHub.connect();
+            GitHub github = GitHubUtil.smartConnect();
 
             GitHubUtil.showCurrentRateLimit(github);
 

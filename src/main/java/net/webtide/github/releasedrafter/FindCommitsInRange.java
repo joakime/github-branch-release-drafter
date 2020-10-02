@@ -62,8 +62,7 @@ public class FindCommitsInRange
 
         try
         {
-            LOG.info("Connecting to GitHub");
-            GitHub github = GitHub.connect();
+            GitHub github = GitHubUtil.smartConnect();
             GitHubUtil.showCurrentRateLimit(github);
 
             LOG.info("Fetching repo to [{}]", repoName);
