@@ -18,11 +18,19 @@
 
 package net.webtide.github.releasedrafter;
 
-import org.kohsuke.github.GHObject;
+import java.io.IOException;
+
+import org.kohsuke.github.GHCommit;
+import org.kohsuke.github.GHFileNotFoundException;
+import org.kohsuke.github.GHRef;
 import org.kohsuke.github.GHRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RefUtil
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RefUtil.class);
+
     /**
      * Obtain an arbitrary Repository object from provided reference.
      * <p>
@@ -35,10 +43,55 @@ public class RefUtil
      * </ol>
      *
      * @param repo the repository to lookup reference against.
-     * @param ref the reference to look up.
+     * @param ref the commit the reference points to
      */
-    public static GHObject findReference(GHRepository repo, String ref)
+    public static GHCommit findReference(GHRepository repo, String ref) throws IOException
     {
-        return null;
+        if (ref.startsWith("refs/"))
+        {
+            GHRef ghref = repo.getRef(ref);
+            return getCommitFor(repo, ghref);
+        }
+        else if (NameUtil.isSha1(ref))
+        {
+            return repo.getCommit(ref);
+        }
+        else
+        {
+            // Try a branch reference: "refs/heads/{name}"
+            try
+            {
+                GHRef ghref = repo.getRef("refs/heads/" + ref);
+                return getCommitFor(repo, ghref);
+            }
+            catch (GHFileNotFoundException e)
+            {
+                LOG.debug("Not found: refs/heads/{}", ref, e);
+            }
+
+            // Try a tags reference: "refs/tags/{name}"
+            try
+            {
+                GHRef ghref = repo.getRef("refs/tags/" + ref);
+                return getCommitFor(repo, ghref);
+            }
+            catch (GHFileNotFoundException e)
+            {
+                LOG.debug("Not found: refs/tags/{}", ref, e);
+            }
+        }
+        throw new GHFileNotFoundException("Not a recognized reference: " + ref);
+    }
+
+    private static GHCommit getCommitFor(GHRepository repo, GHRef ref) throws IOException
+    {
+        GHRef.GHObject obj = ref.getObject();
+        if ("commit".equals(obj.getType()))
+        {
+            return repo.getCommit(obj.getSha());
+        }
+        LOG.info("GHRef.obj.type: {}", obj.getType());
+        LOG.info("GHRef.obj.sha: {}", obj.getSha());
+        throw new RuntimeException("findReference() doesn't support object type: " + obj.getType());
     }
 }

@@ -19,13 +19,19 @@
 package net.webtide.github.releasedrafter;
 
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 public final class NameUtil
 {
     public static String toLowerCaseUS(String str)
     {
-        if(str == null)
+        if (str == null)
             return "";
         return str.toLowerCase(Locale.US);
+    }
+
+    public static boolean isSha1(String str)
+    {
+        return Pattern.matches("[0 -9a-f]{40}", str);
     }
 }

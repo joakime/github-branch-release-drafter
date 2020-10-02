@@ -25,6 +25,7 @@ import org.kohsuke.github.GitHub;
 
 public class AbstractGitHubTest
 {
+    public static final String REPO_SELF = "joakime/github-branch-release-drafter";
     protected static GitHub github;
 
     @BeforeAll

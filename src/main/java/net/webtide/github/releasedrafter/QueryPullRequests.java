@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.Objects;
 
 import net.webtide.github.releasedrafter.logging.Logging;
+import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHDirection;
 import org.kohsuke.github.GHIssueState;
-import org.kohsuke.github.GHObject;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestQueryBuilder;
 import org.kohsuke.github.GHRepository;
@@ -64,15 +64,15 @@ public class QueryPullRequests
 
             LOG.info("On branch: {}", branch);
 
-            GHObject refFrom = RefUtil.findReference(repo, from);
+            GHCommit refFrom = RefUtil.findReference(repo, from);
             if (refFrom == null)
                 throw new IllegalArgumentException("Unable to find 'from' Repository reference [" + from + "]");
-            GHObject refTo = RefUtil.findReference(repo, from);
+            GHCommit refTo = RefUtil.findReference(repo, from);
             if (refTo == null)
                 throw new IllegalArgumentException("Unable to find 'to' Repository reference [" + to + "]");
 
-            Date dateFrom = refFrom.getUpdatedAt();
-            Date dateTo = refTo.getUpdatedAt();
+            Date dateFrom = refFrom.getCommitDate();
+            Date dateTo = refTo.getCommitDate();
             int maxHits = 100;
 
             Objects.requireNonNull(dateFrom, "Unable to find date for 'from' reference [" + from + "]: " + refFrom);
