@@ -45,6 +45,6 @@ public class ArgsTest
     @Test
     public void testBadArg()
     {
-        assertThrows(IllegalArgumentException.class, () -> new Args("joakime/bogus-repo"));
+        assertThrows(Args.ArgException.class, () -> new Args("joakime/bogus-repo"));
     }
 }

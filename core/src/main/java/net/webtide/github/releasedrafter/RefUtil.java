@@ -27,12 +27,12 @@ public class RefUtil
      * Obtain an arbitrary Repository object from provided reference.
      * <p>
      * Lookup is the following.
-     *     <ol>
-     *         <li>If reference starts with <code>"refs/"</code> treat as a raw String reference</li>
-     *         <li>If reference is 40 characters and is all hexadecimal, treat it as a sha1 reference</li>
-     *         <li>All others are used as <code>"refs/heads/{name}</code></li>
-     *     </ol>
      * </p>
+     * <ol>
+     *     <li>If reference starts with <code>"refs/"</code> treat as a raw String reference</li>
+     *     <li>If reference is 40 characters and is all hexadecimal, treat it as a sha1 reference</li>
+     *     <li>All others are used as <code>"refs/heads/{name}</code></li>
+     * </ol>
      *
      * @param repo the repository to lookup reference against.
      * @param ref the reference to look up.
