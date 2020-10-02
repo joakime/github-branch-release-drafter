@@ -1,10 +1,11 @@
 #!/bin/sh -l
 
 BRD_VERSION=$(cat /app/build/version.txt)
+BRD_URL="https://github.com/joakime/github-branch-release-drafter/releases/download/${BRD_VERSION}/github-branch-release-drafter-${BRD_VERSION}.jar"
+BRD_JAR=/app/branch-release-drafter.jar
 
-wget -q -O /app/branch-release-drafter.jar \
-  https://github.com/joakime/github-branch-release-drafter/releases/download/${BRD_VERSION}/github-branch-release-drafter-${BRD_VERSION}.jar
-  2 > &1 > /dev/null
+echo "Attempting to fetch (possibly) pre-built ${BRD_URL}"
+wget -q -O ${BRD_JAR} ${BRD_URL} 2>&1 > /app/download.log
 
 if [ ! -f /app/branch-release-drafter.jar ] ; then
   echo "Prebuilt branch-release-drafter.jar for version $BRD_VERSION not found, building afresh."
