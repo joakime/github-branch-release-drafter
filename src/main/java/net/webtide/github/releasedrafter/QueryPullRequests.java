@@ -164,6 +164,9 @@ public class QueryPullRequests
                     continue;
                 }
 
+                // Refresh the PullRequest so we get access to the merge information.
+                // (which isn't present in the results from GHPullRequestQueryBuilder)
+                // We do this as late as possible to reduce the number of API calls we make.
                 pullRequest.refresh();
                 if (!pullRequest.isMerged())
                 {
