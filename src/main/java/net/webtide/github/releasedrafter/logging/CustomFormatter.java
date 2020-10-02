@@ -26,8 +26,8 @@ import java.util.logging.LogRecord;
 
 public class CustomFormatter extends Formatter
 {
-    private static final String format =
-        "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS:%4$-6s:%3$s [%6$s] %5$s%7$s%n";
+    // Level [shortname] message throwable
+    private static final String format = "[%5$s.%4$s] %6$s%8$s%n";
     private final Date dat = new Date();
 
     /**
@@ -54,6 +54,10 @@ public class CustomFormatter extends Formatter
         }
         String message = formatMessage(record);
         String threadId = String.valueOf(record.getThreadID());
+        String shortName = record.getLoggerName();
+        int lastDot = shortName.lastIndexOf('.');
+        if (lastDot > 0)
+            shortName = shortName.substring(lastDot + 1);
         String throwable = "";
         if (record.getThrown() != null)
         {
@@ -68,10 +72,11 @@ public class CustomFormatter extends Formatter
         return String.format(format, dat, // %1
             source, // %2
             record.getLoggerName(), // %3
-            record.getLevel().getName(), // %4
-            message, // %5
-            threadId, // %6
-            throwable // %7
+            shortName, // %4
+            record.getLevel().getName(), // %5
+            message, // %6
+            threadId, // %7
+            throwable // %8
         );
     }
 }
