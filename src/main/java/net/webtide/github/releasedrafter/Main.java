@@ -44,23 +44,15 @@ public class Main
 
     public static void main(String[] commandLine)
     {
-        Args args = new Args(commandLine);
-        boolean showBranches = args.containsKey("show-branches");
-        boolean showReleases = args.containsKey("show-releases");
-        boolean showTags = args.containsKey("show-tags");
-        boolean showRefs = args.containsKey("show-refs");
-        String repoName = args.getRequired("repo");
-
-        if (repoName == null)
-        {
-            System.err.println("No repo provided");
-            System.err.println("Usage: release-drafter.jar [options] [repo-ref]");
-            System.exit(-1);
-        }
-
         try
         {
-            LOG.info("Connecting to GitHub");
+            Args args = new Args(commandLine);
+            boolean showBranches = args.containsKey("show-branches");
+            boolean showReleases = args.containsKey("show-releases");
+            boolean showTags = args.containsKey("show-tags");
+            boolean showRefs = args.containsKey("show-refs");
+            String repoName = args.getRequired("repo");
+
             GitHub github = GitHubUtil.smartConnect();
 
             GitHubUtil.showCurrentRateLimit(github);
@@ -140,6 +132,12 @@ public class Main
                     maxTagsToShow--;
                 }
             }
+        }
+        catch (Args.ArgException e)
+        {
+            System.err.printf("COMMAND LINE ERROR: %s%n", e.getMessage());
+            System.err.println("Usage: release-drafter.jar [options]");
+            System.exit(-1);
         }
         catch (IOException e)
         {
