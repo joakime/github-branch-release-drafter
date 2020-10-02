@@ -15,4 +15,4 @@ COPY .mvn/wrapper/* /app/build/.mvn/wrapper/
 COPY src /app/build/src/
 RUN /app/build/build.sh
 COPY entrypoint.sh /entrypoint.sh
-# ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
