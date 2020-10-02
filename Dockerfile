@@ -7,11 +7,12 @@ LABEL "com.github.actions.description"="Drafts your next release notes from pull
 LABEL "com.github.actions.icon"="droplet"
 LABEL "com.github.actions.color"="salmon"
 WORKDIR /app
-COPY build.sh /app/build/
-COPY version.txt /app/build/
-COPY mvnw /app/build/
-COPY .mvn /app/build/
-COPY src /app/build/
+# Copy build script and version of github-branch-release-drafter that docker should look for / use
+COPY version.txt build.sh mvnw pom.xml header-template-java.txt /app/build/
+# Copy Build Tool Wrapper
+COPY .mvn/wrapper/* /app/build/.mvn/wrapper/
+# Copy Source
+COPY src /app/build/src/
 RUN /app/build/build.sh
 COPY entrypoint.sh /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT ["/entrypoint.sh"]
