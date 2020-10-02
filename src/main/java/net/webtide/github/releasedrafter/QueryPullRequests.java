@@ -78,6 +78,8 @@ public class QueryPullRequests
             Objects.requireNonNull(dateFrom, "Unable to find date for 'from' reference [" + from + "]: " + refFrom);
             Objects.requireNonNull(dateTo, "Unable to find date for 'to' reference [" + to + "]: " + refTo);
 
+            LOG.info("In Date Range: {} [{}] -> {} [{}]", dateFrom, from, dateTo, to);
+
             List<ChangeEntry> changes = QueryPullRequests.findClosedAndMergedPullRequests(repo, branch, dateFrom, dateTo, maxHits);
             for (ChangeEntry entry : changes)
             {
@@ -103,10 +105,10 @@ public class QueryPullRequests
      * @param baseBranchName the base branch name (just a branch name, not a full ref)
      * @param dateFrom the date of the oldest PR to return
      * @param dateTo the date of the newest PR to return
-     * @param maxHits the maximum number of pull requests to return
+     * @param maxPullRequestsToSearchThrough the maximum number of pull requests to search through to find end range (will terminate search early if reached)
      * @return the list of changes found
      */
-    public static List<ChangeEntry> findClosedAndMergedPullRequests(GHRepository repo, String baseBranchName, Date dateFrom, Date dateTo, int maxHits) throws IOException
+    public static List<ChangeEntry> findClosedAndMergedPullRequests(GHRepository repo, String baseBranchName, Date dateFrom, Date dateTo, int maxPullRequestsToSearchThrough) throws IOException
     {
         PagedIterable<GHPullRequest> pullRequestPagedIterable =
             repo.queryPullRequests()
@@ -117,45 +119,63 @@ public class QueryPullRequests
                 .list();
 
         List<ChangeEntry> hits = new ArrayList<>();
-        int maxPullRequests = 30;
 
         LOG.debug("Finding PullRequests (CLOSED, MERGED, !DRAFT, branch={}, dateFrom={}, dateTo={})", baseBranchName, dateFrom, dateTo);
 
         long tsFrom = dateFrom.getTime();
         long tsTo = dateTo.getTime();
 
+        boolean foundFirstEntryByDate = false;
+        int searchPullRequests = 0;
+
         for (GHPullRequest pullRequest : pullRequestPagedIterable.withPageSize(10))
         {
-            if (maxPullRequests <= 0)
+            if (searchPullRequests > maxPullRequestsToSearchThrough)
+            {
+                LOG.debug("Searched through too many pull requests: {}", maxPullRequestsToSearchThrough);
                 break;
-
-            if (pullRequest.isDraft())
-            {
-                LOG.debug("Skipping draft PR #{} - {}", pullRequest.getNumber(), pullRequest.getTitle());
-                continue;
             }
 
-            if (!pullRequest.isMerged())
+            searchPullRequests++;
+            Date updateDate = pullRequest.getUpdatedAt();
+            long tsEntry = updateDate.getTime();
+            if (!foundFirstEntryByDate)
             {
-                LOG.debug("Skipping unmerged PR #{} - {}", pullRequest.getNumber(), pullRequest.getTitle());
-                continue;
+                if (tsEntry > tsTo)
+                {
+                    LOG.debug("Skipping too new {} PR #{} - {}", updateDate, pullRequest.getNumber(), pullRequest.getTitle());
+                }
+                else
+                {
+                    foundFirstEntryByDate = true;
+                }
             }
-
-            ChangeEntry changeEntry = ChangeEntryBuilder.from(repo, pullRequest);
-
-            long tsEntry = changeEntry.getDate().getTime();
-            if ((tsEntry < tsFrom) || (tsEntry > tsTo))
+            else
             {
-                LOG.debug("Skipping outside of date range {} PR #{} - {}", changeEntry.getDate(), pullRequest.getNumber(), pullRequest.getTitle());
-                continue;
+                if (tsEntry < tsFrom)
+                {
+                    LOG.debug("Skipping too old {} PR #{} - {}", updateDate, pullRequest.getNumber(), pullRequest.getTitle());
+                    break; // we are done searching the list
+                }
+
+                if (pullRequest.isDraft())
+                {
+                    LOG.debug("Skipping draft PR #{} - {}", pullRequest.getNumber(), pullRequest.getTitle());
+                    continue;
+                }
+
+                pullRequest.refresh();
+                if (!pullRequest.isMerged())
+                {
+                    LOG.debug("Skipping unmerged PR #{} - {}", pullRequest.getNumber(), pullRequest.getTitle());
+                    continue;
+                }
+
+                hits.add(ChangeEntryBuilder.from(repo, pullRequest));
             }
-
-            hits.add(changeEntry);
-
-            maxPullRequests--;
         }
 
-        LOG.info("Found {} pull requests", hits.size());
+        LOG.info("Found {} pull requests (from {} searched)", hits.size(), searchPullRequests);
         return hits;
     }
 }

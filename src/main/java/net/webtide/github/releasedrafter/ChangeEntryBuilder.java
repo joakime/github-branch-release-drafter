@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHLabel;
 import org.kohsuke.github.GHPullRequest;
@@ -47,7 +48,8 @@ public class ChangeEntryBuilder
         String committer = null;
         String author = null;
 
-        if (pullRequest.isMerged())
+        String commitSha = pullRequest.getMergeCommitSha();
+        if (StringUtils.isNotBlank(commitSha))
         {
             GHCommit mergeCommit = repo.getCommit(pullRequest.getMergeCommitSha());
             if (mergeCommit != null)

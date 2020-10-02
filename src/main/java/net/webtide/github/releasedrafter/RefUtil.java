@@ -24,6 +24,7 @@ import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHFileNotFoundException;
 import org.kohsuke.github.GHRef;
 import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.GHTagObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +51,7 @@ public class RefUtil
         if (ref.startsWith("refs/"))
         {
             GHRef ghref = repo.getRef(ref);
-            return getCommitFor(repo, ghref);
+            return getCommitFor(repo, ghref.getObject());
         }
         else if (NameUtil.isSha1(ref))
         {
@@ -62,7 +63,7 @@ public class RefUtil
             try
             {
                 GHRef ghref = repo.getRef("refs/heads/" + ref);
-                return getCommitFor(repo, ghref);
+                return getCommitFor(repo, ghref.getObject());
             }
             catch (GHFileNotFoundException e)
             {
@@ -73,7 +74,7 @@ public class RefUtil
             try
             {
                 GHRef ghref = repo.getRef("refs/tags/" + ref);
-                return getCommitFor(repo, ghref);
+                return getCommitFor(repo, ghref.getObject());
             }
             catch (GHFileNotFoundException e)
             {
@@ -83,12 +84,16 @@ public class RefUtil
         throw new GHFileNotFoundException("Not a recognized reference: " + ref);
     }
 
-    private static GHCommit getCommitFor(GHRepository repo, GHRef ref) throws IOException
+    private static GHCommit getCommitFor(GHRepository repo, GHRef.GHObject obj) throws IOException
     {
-        GHRef.GHObject obj = ref.getObject();
         if ("commit".equals(obj.getType()))
         {
             return repo.getCommit(obj.getSha());
+        }
+        else if ("tag".equals(obj.getType()))
+        {
+            GHTagObject tagObj = repo.getTagObject(obj.getSha());
+            return getCommitFor(repo, tagObj.getObject());
         }
         LOG.info("GHRef.obj.type: {}", obj.getType());
         LOG.info("GHRef.obj.sha: {}", obj.getSha());

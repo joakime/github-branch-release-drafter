@@ -54,6 +54,14 @@ public class RefUtilTest extends AbstractGitHubTest
     }
 
     @Test
+    public void testFindReferenceViaTagObj() throws IOException
+    {
+        GHRepository repo = github.getRepository("eclipse/jetty.project");
+        GHCommit ref = RefUtil.findReference(repo, "jetty-9.4.31.v20200723");
+        assertThat("Ref to tag 'jetty-9.4.31.v20200723'", ref, notNullValue());
+    }
+
+    @Test
     public void testFindReferenceViaSha1() throws IOException
     {
         GHRepository repo = github.getRepository(REPO_SELF);
