@@ -41,7 +41,7 @@ public class DumpPullRequestDetails
         Logging.config();
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(QueryPullRequests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DumpPullRequestDetails.class);
 
     public static void main(String[] commandLine)
     {

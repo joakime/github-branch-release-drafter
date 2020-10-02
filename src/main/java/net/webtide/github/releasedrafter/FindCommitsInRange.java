@@ -38,7 +38,7 @@ public class FindCommitsInRange
         Logging.config();
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(QueryPullRequests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FindCommitsInRange.class);
 
     public static void main(String[] commandLine)
     {
