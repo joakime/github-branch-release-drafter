@@ -67,7 +67,7 @@ public class QueryPullRequests
             GHCommit refFrom = RefUtil.findReference(repo, from);
             if (refFrom == null)
                 throw new IllegalArgumentException("Unable to find 'from' Repository reference [" + from + "]");
-            GHCommit refTo = RefUtil.findReference(repo, from);
+            GHCommit refTo = RefUtil.findReference(repo, to);
             if (refTo == null)
                 throw new IllegalArgumentException("Unable to find 'to' Repository reference [" + to + "]");
 
@@ -119,12 +119,37 @@ public class QueryPullRequests
         List<ChangeEntry> hits = new ArrayList<>();
         int maxPullRequests = 30;
 
+        LOG.debug("Finding PullRequests (CLOSED, MERGED, !DRAFT, branch={}, dateFrom={}, dateTo={})", baseBranchName, dateFrom, dateTo);
+
+        long tsFrom = dateFrom.getTime();
+        long tsTo = dateTo.getTime();
+
         for (GHPullRequest pullRequest : pullRequestPagedIterable.withPageSize(10))
         {
             if (maxPullRequests <= 0)
                 break;
 
+            if (pullRequest.isDraft())
+            {
+                LOG.debug("Skipping draft PR #{} - {}", pullRequest.getNumber(), pullRequest.getTitle());
+                continue;
+            }
+
+            if (!pullRequest.isMerged())
+            {
+                LOG.debug("Skipping unmerged PR #{} - {}", pullRequest.getNumber(), pullRequest.getTitle());
+                continue;
+            }
+
             ChangeEntry changeEntry = ChangeEntryBuilder.from(repo, pullRequest);
+
+            long tsEntry = changeEntry.getDate().getTime();
+            if ((tsEntry < tsFrom) || (tsEntry > tsTo))
+            {
+                LOG.debug("Skipping outside of date range {} PR #{} - {}", changeEntry.getDate(), pullRequest.getNumber(), pullRequest.getTitle());
+                continue;
+            }
+
             hits.add(changeEntry);
 
             maxPullRequests--;

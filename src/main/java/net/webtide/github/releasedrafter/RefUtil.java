@@ -66,7 +66,7 @@ public class RefUtil
             }
             catch (GHFileNotFoundException e)
             {
-                LOG.debug("Not found: refs/heads/{}", ref, e);
+                LOG.trace("Not found: refs/heads/{}", ref, e);
             }
 
             // Try a tags reference: "refs/tags/{name}"
@@ -77,7 +77,7 @@ public class RefUtil
             }
             catch (GHFileNotFoundException e)
             {
-                LOG.debug("Not found: refs/tags/{}", ref, e);
+                LOG.trace("Not found: refs/tags/{}", ref, e);
             }
         }
         throw new GHFileNotFoundException("Not a recognized reference: " + ref);
