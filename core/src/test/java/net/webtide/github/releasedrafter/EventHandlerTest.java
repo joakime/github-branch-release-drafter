@@ -24,24 +24,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.github.GHEventPayload;
-import org.kohsuke.github.GitHub;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class EventHandlerTest
+public class EventHandlerTest extends AbstractGitHubTest
 {
-    private static GitHub github;
-
-    @BeforeAll
-    public static void initGitHub() throws IOException
-    {
-        github = GitHub.connect();
-    }
-
     @Test
     public void testParsePushEventFromDisk() throws IOException
     {
@@ -50,7 +40,7 @@ public class EventHandlerTest
         {
             GHEventPayload.Push push = github.parseEventPayload(reader, GHEventPayload.Push.class);
             assertNotNull(push, "GH Event Push parse should not have been null");
-            assertEquals("joakime/bugus-repo", push.getRepository().getFullName());
+            assertEquals("joakime/bogus-repo", push.getRepository().getFullName());
         }
     }
 }

@@ -19,13 +19,15 @@
 package net.webtide.github.releasedrafter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 import net.webtide.github.releasedrafter.logging.Logging;
-import org.apache.commons.lang3.StringUtils;
-import org.kohsuke.github.GHBranch;
-import org.kohsuke.github.GHCommitPointer;
 import org.kohsuke.github.GHDirection;
 import org.kohsuke.github.GHIssueState;
+import org.kohsuke.github.GHObject;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequestQueryBuilder;
 import org.kohsuke.github.GHRepository;
@@ -45,22 +47,15 @@ public class QueryPullRequests
 
     public static void main(String[] commandLine)
     {
-        Args args = new Args(commandLine);
-
-        String repoName = args.get("repo");
-        String branch = args.get("branch");
-        String revLastVersion = args.get("revLastVersion");
-        String revHead = args.get("revHead");
-
-        if (repoName == null)
-        {
-            System.err.println("No repo provided");
-            System.err.println("Usage: release-drafter.jar [options] --repo=[repo-ref]");
-            System.exit(-1);
-        }
-
         try
         {
+            Args args = new Args(commandLine);
+
+            String repoName = args.getRequired("repo");
+            String branch = args.getRequired("branch");
+            String from = args.getRequired("from");
+            String to = args.getRequired("to");
+
             LOG.info("Connecting to GitHub");
             GitHub github = GitHub.connect();
             GitHubUtil.showCurrentRateLimit(github);
@@ -68,84 +63,97 @@ public class QueryPullRequests
             LOG.info("Fetching repo to [{}]", repoName);
             GHRepository repo = github.getRepository(repoName);
 
-            if (StringUtils.isBlank(branch))
-            {
-                branch = repo.getDefaultBranch();
-            }
+            LOG.info("On branch: {}", branch);
 
-            GHBranch onBranch = repo.getBranch(branch);
-            LOG.info("On branch: {}", onBranch);
+            GHObject refFrom = RefUtil.findReference(repo, from);
+            if (refFrom == null)
+                throw new IllegalArgumentException("Unable to find 'from' Repository reference [" + from + "]");
+            GHObject refTo = RefUtil.findReference(repo, from);
+            if (refTo == null)
+                throw new IllegalArgumentException("Unable to find 'to' Repository reference [" + to + "]");
 
-            QueryPullRequests query = new QueryPullRequests();
-            query.findPullRequestsForCommits(repo, onBranch, revLastVersion, revHead);
+            Date dateFrom = refFrom.getUpdatedAt();
+            Date dateTo = refTo.getUpdatedAt();
+            int maxHits = 100;
+
+            Objects.requireNonNull(dateFrom, "Unable to find date for 'from' reference [" + from + "]: " + refFrom);
+            Objects.requireNonNull(dateTo, "Unable to find date for 'to' reference [" + to + "]: " + refTo);
+
+            QueryPullRequests.findClosedAndMergedPullRequests(repo, branch, dateFrom, dateTo, maxHits);
+        }
+        catch (Args.ArgException e)
+        {
+            System.err.printf("COMMAND LINE ERROR: %s%n", e.getMessage());
+            System.err.println("Usage: release-drafter.jar [options]");
+            System.exit(-1);
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.warn("Oops", e);
         }
     }
 
-    private void findPullRequestsForCommits(GHRepository repo, GHBranch branch, String fromSha, String toSha) throws IOException
+    /**
+     * Find the list of PullRequests that are CLOSED, and Merged, for a particular {@code base} Branch Name, within a range of dates.
+     *
+     * @param repo the repository to query for pull requests
+     * @param baseBranchName the base branch name (just a branch name, not a full ref)
+     * @param dateFrom the date of the oldest PR to return
+     * @param dateTo the date of the newest PR to return
+     * @param maxHits the maximum number of pull requests to return
+     * @return the list of changes found
+     */
+    public static List<ChangeEntry> findClosedAndMergedPullRequests(GHRepository repo, String baseBranchName, Date dateFrom, Date dateTo, int maxHits) throws IOException
     {
-        String branchRef = "refs/heads/" + branch.getName();
-
         PagedIterable<GHPullRequest> pullRequestPagedIterable =
             repo.queryPullRequests()
+                .base(baseBranchName)
                 .state(GHIssueState.CLOSED)
                 .direction(GHDirection.DESC)
-                //.head(branchRef)
                 .sort(GHPullRequestQueryBuilder.Sort.UPDATED)
                 .list();
 
+        List<ChangeEntry> hits = new ArrayList<>();
+        int maxPullRequests = 30;
         for (GHPullRequest pullRequest : pullRequestPagedIterable.withPageSize(10))
         {
-            LOG.info("pull-request[{}]", pullRequest.getUrl());
-            LOG.info("   title: {}", pullRequest.getTitle());
-            LOG.info("   merge-commit-sha: {}", pullRequest.getMergeCommitSha());
-            LOG.info("   base: {}", toString(pullRequest.getBase()));
-            LOG.info("   head: {}", toString(pullRequest.getHead()));
-        }
-
-        /*
-        Date dateSince = repo.getCommit(fromSha).getCommitDate();
-        Date dateUntil = repo.getCommit(toSha).getCommitDate();
-
-        PagedIterable<GHCommit> commitIterable = repo.queryCommits()
-            .from(branchRef)
-            .since(dateSince)
-            .until(dateUntil)
-            .pageSize(20)
-            .list();
-
-        int maxCommits = 500;
-
-        int found = 0;
-        for (GHCommit commit : commitIterable.withPageSize(50))
-        {
-            if (maxCommits <= 0)
+            if (maxPullRequests <= 0)
                 break;
 
-            LOG.info("commit[{}] ({}) {}",
-                commit.getSHA1(),
-                commit.getCommitDate(),
-                commit.getLastStatus());
+            ChangeEntry changeEntry = ChangeEntryBuilder.from(repo, pullRequest);
+            hits.add(changeEntry);
+            // DumpPullRequestDetails.logPullRequest(LOG, repo, pullRequest);
 
-            maxCommits--;
-            found++;
+            maxPullRequests--;
         }
-        LOG.info("Found {} commits", found);
 
-        repo.queryPullRequests()
-            .base(branchRef)
-            .direction(GHDirection.DESC)
-            .head()
-         */
+        LOG.info("Found {} pull requests", hits.size());
+        return hits;
     }
 
-    private static String toString(GHCommitPointer commitPointer)
+    private void findPullRequestsForCommits(GHRepository repo, String baseBranchName) throws IOException
     {
-        if (commitPointer == null)
-            return "<null>";
-        return String.format("CommitPointer[ref=%s,label=%s,sha=%s]", commitPointer.getRef(), commitPointer.getLabel(), commitPointer.getSha());
+        PagedIterable<GHPullRequest> pullRequestPagedIterable =
+            repo.queryPullRequests()
+                .base(baseBranchName)
+                .state(GHIssueState.CLOSED)
+                .direction(GHDirection.DESC)
+                .sort(GHPullRequestQueryBuilder.Sort.UPDATED)
+                .list();
+
+        int maxPullRequests = 30;
+
+        int matchingCount = 0;
+        for (GHPullRequest pullRequest : pullRequestPagedIterable.withPageSize(10))
+        {
+            if (maxPullRequests <= 0)
+                break;
+
+            DumpPullRequestDetails.logPullRequest(LOG, repo, pullRequest);
+
+            maxPullRequests--;
+            matchingCount++;
+        }
+        LOG.info("Found {} pull requests", matchingCount);
     }
 }
