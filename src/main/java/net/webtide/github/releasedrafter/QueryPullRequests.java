@@ -78,7 +78,11 @@ public class QueryPullRequests
             Objects.requireNonNull(dateFrom, "Unable to find date for 'from' reference [" + from + "]: " + refFrom);
             Objects.requireNonNull(dateTo, "Unable to find date for 'to' reference [" + to + "]: " + refTo);
 
-            QueryPullRequests.findClosedAndMergedPullRequests(repo, branch, dateFrom, dateTo, maxHits);
+            List<ChangeEntry> changes = QueryPullRequests.findClosedAndMergedPullRequests(repo, branch, dateFrom, dateTo, maxHits);
+            for (ChangeEntry entry : changes)
+            {
+                LOG.info(entry.toString());
+            }
         }
         catch (Args.ArgException e)
         {
@@ -114,6 +118,7 @@ public class QueryPullRequests
 
         List<ChangeEntry> hits = new ArrayList<>();
         int maxPullRequests = 30;
+
         for (GHPullRequest pullRequest : pullRequestPagedIterable.withPageSize(10))
         {
             if (maxPullRequests <= 0)
@@ -121,38 +126,11 @@ public class QueryPullRequests
 
             ChangeEntry changeEntry = ChangeEntryBuilder.from(repo, pullRequest);
             hits.add(changeEntry);
-            // DumpPullRequestDetails.logPullRequest(LOG, repo, pullRequest);
 
             maxPullRequests--;
         }
 
         LOG.info("Found {} pull requests", hits.size());
         return hits;
-    }
-
-    private void findPullRequestsForCommits(GHRepository repo, String baseBranchName) throws IOException
-    {
-        PagedIterable<GHPullRequest> pullRequestPagedIterable =
-            repo.queryPullRequests()
-                .base(baseBranchName)
-                .state(GHIssueState.CLOSED)
-                .direction(GHDirection.DESC)
-                .sort(GHPullRequestQueryBuilder.Sort.UPDATED)
-                .list();
-
-        int maxPullRequests = 30;
-
-        int matchingCount = 0;
-        for (GHPullRequest pullRequest : pullRequestPagedIterable.withPageSize(10))
-        {
-            if (maxPullRequests <= 0)
-                break;
-
-            DumpPullRequestDetails.logPullRequest(LOG, repo, pullRequest);
-
-            maxPullRequests--;
-            matchingCount++;
-        }
-        LOG.info("Found {} pull requests", matchingCount);
     }
 }
