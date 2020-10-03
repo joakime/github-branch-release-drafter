@@ -62,10 +62,11 @@ public class Main
                 LOG.info( "push: {}", push );
                 push.getRepository().listReleases()
                     .toList().stream()
-                    .forEach( ghRelease -> LOG.info( "ghRelease: name: {}, tagName: {}, body: {}",
+                    .forEach( ghRelease -> LOG.info( "ghRelease: name: {}, tagName: {}, body: {}, targetCommitish: {}",
                                                      ghRelease.getName(),
                                                      ghRelease.getTagName(),
-                                                     ghRelease.getBody()));
+                                                     ghRelease.getBody(),
+                                                     ghRelease.getTargetCommitish()));
             }
 
 
