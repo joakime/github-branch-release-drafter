@@ -19,12 +19,17 @@
 package net.webtide.github.releasedrafter;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 
 import net.webtide.github.releasedrafter.logging.Logging;
 import org.kohsuke.github.GHBranch;
 import org.kohsuke.github.GHCommit;
+import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRef;
 import org.kohsuke.github.GHRelease;
 import org.kohsuke.github.GHRepository;
@@ -43,24 +48,28 @@ public class Main
 
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] commandLine)
-    {
-        LOG.info( "------------------------------------");
-        LOG.info( "args: {}", Arrays.asList(commandLine));
-        LOG.info( "------------------------------------");
-
+    public static void main(String[] commandLine) {
         try
         {
+            GitHub github = GitHubUtil.smartConnect();
+
+            GitHubUtil.showCurrentRateLimit(github);
+
+            Path eventPath = Paths.get(System.getenv("GITHUB_EVENT_PATH"));
+            LOG.info( "------------------------------------" );
+            LOG.info( "GITHUB_EVENT_PATH content: {}", Files.readString(eventPath));
+            LOG.info( "------------------------------------" );
+            try (Reader reader = Files.newBufferedReader(eventPath))
+            {
+                GHEventPayload.Push push = github.parseEventPayload( reader, GHEventPayload.Push.class);
+                LOG.info( "push: {}", push );
+            }
             Args args = new Args(commandLine);
             boolean showBranches = args.containsKey("show-branches");
             boolean showReleases = args.containsKey("show-releases");
             boolean showTags = args.containsKey("show-tags");
             boolean showRefs = args.containsKey("show-refs");
             String repoName = args.getRequired("repo");
-
-            GitHub github = GitHubUtil.smartConnect();
-
-            GitHubUtil.showCurrentRateLimit(github);
 
             LOG.info("Fetching repo to [{}]", repoName);
             GHRepository repo = github.getRepository(repoName);
