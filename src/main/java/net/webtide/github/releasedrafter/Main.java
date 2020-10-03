@@ -56,14 +56,19 @@ public class Main
             GitHubUtil.showCurrentRateLimit(github);
 
             Path eventPath = Paths.get(System.getenv("GITHUB_EVENT_PATH"));
-            LOG.info( "------------------------------------" );
-            LOG.info( "GITHUB_EVENT_PATH content: {}", Files.readString(eventPath));
-            LOG.info( "------------------------------------" );
             try (Reader reader = Files.newBufferedReader(eventPath))
             {
                 GHEventPayload.Push push = github.parseEventPayload( reader, GHEventPayload.Push.class);
                 LOG.info( "push: {}", push );
+                push.getRepository().listReleases()
+                    .toList().stream()
+                    .forEach( ghRelease -> LOG.info( "ghRelease: name: {}, tagName: {}, body: {}",
+                                                     ghRelease.getName(),
+                                                     ghRelease.getTagName(),
+                                                     ghRelease.getBody()));
             }
+
+
             Args args = new Args(commandLine);
             boolean showBranches = args.containsKey("show-branches");
             boolean showReleases = args.containsKey("show-releases");
@@ -158,4 +163,6 @@ public class Main
             LOG.warn("Oops", e);
         }
     }
+
+
 }
