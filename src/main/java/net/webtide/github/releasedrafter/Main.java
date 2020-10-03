@@ -19,6 +19,7 @@
 package net.webtide.github.releasedrafter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 import net.webtide.github.releasedrafter.logging.Logging;
@@ -44,6 +45,10 @@ public class Main
 
     public static void main(String[] commandLine)
     {
+        LOG.info( "------------------------------------");
+        LOG.info( "args: {}", Arrays.asList(commandLine));
+        LOG.info( "------------------------------------");
+
         try
         {
             Args args = new Args(commandLine);
