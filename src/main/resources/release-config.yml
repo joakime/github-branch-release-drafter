@@ -1,0 +1,30 @@
+# Emoji reference: https://gitmoji.carloscuesta.me/
+categories:
+  - title: ":warning: Breaking changes"
+    labels:
+      - breaking
+  - title: ":recycle: Removed"
+    labels:
+      - removed
+  - title: ":heavy_plus_sign: Features and improvements"
+    labels:
+      - feature
+      - improvement
+  - title: ":mosquito: Bugs"
+    labels:
+      - bug
+  - title: ":adhesive_bandage: Deprecated"
+    labels:
+      - deprecated
+  # Default label used by Dependabot
+  - title: ":package: Dependency updates"
+    labels:
+      - dependencies
+  - title: ":orange_book: Documentation"
+    label:
+      - documentation
+exclude-labels:
+  - reverted
+  - no-changelog
+  - skip-changelog
+  - invalid

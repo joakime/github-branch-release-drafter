@@ -19,21 +19,30 @@
 package net.webtide.github.releasedrafter;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import net.webtide.github.releasedrafter.logging.Logging;
+import net.webtide.github.releasedrafter.release.Category;
 import net.webtide.github.releasedrafter.release.GHReleaseFinder;
+import net.webtide.github.releasedrafter.release.ReleaseDraft;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.github.GHBranch;
 import org.kohsuke.github.GHCommit;
+import org.kohsuke.github.GHContent;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRef;
 import org.kohsuke.github.GHRelease;
@@ -195,7 +204,8 @@ public class Main
             GHRepository repo = github.getRepository(repoName);
 
             // What was the last release (non-draft) on this commitish?
-            Date dateOfLastRelease = getDateOfLastRelease(repo, targetCommitish);
+            GHRelease lastRelease = GHReleaseFinder.findLastReleaseOn(repo, targetCommitish);
+            Date dateOfLastRelease = getDateOfLastRelease(repo, lastRelease, targetCommitish);
 
             // Find the latest active Draft for this commitish
             GHRelease draft = GHReleaseFinder.getActiveDraft(repo, targetCommitish);
@@ -203,38 +213,119 @@ public class Main
             // Query the pull requests to find the change set.
             GHCommit headCommit = repo.getCommit(push.getHead());
             Date dateTo = headCommit.getCommitDate();
-            int maxPullRequestsToSearchThrough = 400;
+            int maxPullRequestsToSearchThrough = 400; // TODO: this should be configurable
 
             List<ChangeEntry> changeSet = QueryPullRequests.findClosedAndMergedPullRequests(repo, targetCommitish, dateOfLastRelease, dateTo, maxPullRequestsToSearchThrough);
 
-            // FIXME: base this off the yaml template
-            try (StringWriter bodyWriter = new StringWriter();
-                 PrintWriter out = new PrintWriter(bodyWriter))
-            {
-                out.printf("## Release %s%n", targetCommitish);
-                out.printf(" * repo: %s%n", repoName);
-                out.printf(" * dateOfLastRelease: %s%n", dateOfLastRelease.toString());
-                out.printf(" * head-commit: %s%n", push.getHead());
-                out.println();
+            // FIXME: base this off the yaml template / ReleaseDraft effort
+            Map<String, String> props = new HashMap<>();
+            props.put("repoName", repoName);
+            props.put("push.ref", push.getRef());
+            props.put("push.headCommit", push.getHead());
+            props.put("lastRelease.tagName", (lastRelease != null) ? lastRelease.getTagName() : "");
+            props.put("lastRelease.publishedAt", (lastRelease != null) ? lastRelease.getPublished_at().toString() : "");
+            props.put("priorRelease.date", dateOfLastRelease.toString());
+            props.put("dateTo", dateTo.toString());
 
-                out.printf("## %,d Changes Found$%n", changeSet.size());
+            updateReleaseDraft(repo, draft, changeSet, push.getRef(), props);
+        }
+    }
+
+    private static void updateReleaseDraft(GHRepository repo, GHRelease draft, List<ChangeEntry> changeSet, String branchRef, Map<String, String> props) throws IOException
+    {
+        try (StringWriter bodyWriter = new StringWriter();
+             PrintWriter out = new PrintWriter(bodyWriter))
+        {
+            out.printf("## Release %s%n", branchRef);
+            for (Map.Entry<String, String> entry : props.entrySet())
+            {
+                out.printf(" * %s: %s%n", entry.getKey(), entry.getValue());
+            }
+
+            out.println();
+
+            ReleaseDraft releaseDraft = loadReleaseDraft(repo, branchRef);
+
+            if (releaseDraft == null)
+            {
+                out.printf("## %,d Changes Found%n", changeSet.size());
                 for (ChangeEntry change : changeSet)
                 {
                     out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
                 }
-
-                out.flush();
-                draft.update().body(bodyWriter.toString()).update();
-                System.out.println("Updated draft: " + draft);
             }
+            else
+            {
+                for (Category category : releaseDraft.getCategories())
+                {
+                    List<ChangeEntry> subset = changeSet.stream()
+                        .filter(ChangeEntry::isAvailable)
+                        .filter((change) -> !Collections.disjoint(change.getLabels(), category.getLabels()))
+                        .sorted(Comparator.comparingLong((c) -> c.getDate().getTime()))
+                        .collect(Collectors.toList());
+
+                    if (subset.isEmpty())
+                        continue; // skip this category
+
+                    out.printf("## %s%n", category.getTitle());
+                    for (ChangeEntry change : subset)
+                    {
+                        out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
+                        change.setAvailable(false); // disable this change from other categories
+                    }
+                }
+            }
+
+            out.flush();
+            // Only update once all of the release body has been successfully generated
+            draft.update().body(bodyWriter.toString()).update();
+            System.out.println("Updated draft: " + draft);
         }
     }
 
-    private static Date getDateOfLastRelease(GHRepository repo, String targetCommitish) throws IOException
+    private static ReleaseDraft loadReleaseDraft(GHRepository repo, String ref)
     {
-        // What was the last release (non-draft) on this commitish?
-        GHRelease lastRelease = GHReleaseFinder.findLastReleaseOn(repo, targetCommitish);
+        String ghConfigResource = ".github/release-config.yml";
+        try
+        {
+            GHContent drafterContent = repo.getFileContent(ghConfigResource, ref);
+            if (drafterContent.isFile())
+            {
+                try (InputStream input = drafterContent.read())
+                {
+                    ReleaseDraft releaseDraft = ReleaseDraft.load(input);
+                    return releaseDraft;
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            // Not found in GitHub, use default
+            LOG.debug("Not found on github: {}", ghConfigResource, e);
+        }
 
+        String jarResource = "release-config.yml";
+
+        URL url = Main.class.getClassLoader().getResource(jarResource);
+        if (url != null)
+        {
+            try (InputStream input = url.openStream())
+            {
+                ReleaseDraft releaseDraft = ReleaseDraft.load(input);
+                return releaseDraft;
+            }
+            catch (IOException e)
+            {
+                LOG.debug("Unable to find resource: {}", jarResource, e);
+            }
+        }
+
+        // TODO: create raw ReleaseDraft in code?
+        return null;
+    }
+
+    private static Date getDateOfLastRelease(GHRepository repo, GHRelease lastRelease, String targetCommitish) throws IOException
+    {
         if (lastRelease != null)
         {
             return lastRelease.getPublished_at();

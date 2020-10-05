@@ -18,9 +18,6 @@
 
 package net.webtide.github.releasedrafter.release;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import net.webtide.github.releasedrafter.GitHubUtil;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +29,6 @@ public class Category
 
     public Category()
     {
-        //
     }
 
     public String getTitle()
@@ -40,7 +36,7 @@ public class Category
         return title;
     }
 
-    public void setTitle( String title )
+    public void setTitle(String title)
     {
         this.title = title;
     }
@@ -50,7 +46,7 @@ public class Category
         return labels;
     }
 
-    public void setLabels( List<String> labels )
+    public void setLabels(List<String> labels)
     {
         this.labels = labels;
     }

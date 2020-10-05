@@ -40,6 +40,7 @@ public class ChangeEntry
     private final List<String> labels;
     private final String committer;
     private final String author;
+    private boolean available = true;
 
     public ChangeEntry(URL pullRequestURI, int pullRequestId, String branch, String title, Date date, List<String> labels, String committer, String author)
     {
@@ -91,6 +92,16 @@ public class ChangeEntry
     public String getAuthor()
     {
         return author;
+    }
+
+    public boolean isAvailable()
+    {
+        return available;
+    }
+
+    public void setAvailable(boolean flag)
+    {
+        this.available = available;
     }
 
     @Override

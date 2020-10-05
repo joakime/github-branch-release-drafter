@@ -18,13 +18,13 @@
 
 package net.webtide.github.releasedrafter.release;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class ReleaseDraft
 {
@@ -35,7 +35,6 @@ public class ReleaseDraft
 
     public ReleaseDraft()
     {
-        //
     }
 
     public List<Category> getCategories()
@@ -43,7 +42,7 @@ public class ReleaseDraft
         return categories;
     }
 
-    public void setCategories( List<Category> categories )
+    public void setCategories(List<Category> categories)
     {
         this.categories = categories;
     }
@@ -53,7 +52,7 @@ public class ReleaseDraft
         return excludeLabels;
     }
 
-    public void setExcludeLabels( List<String> excludeLabels )
+    public void setExcludeLabels(List<String> excludeLabels)
     {
         this.excludeLabels = excludeLabels;
     }
@@ -64,11 +63,10 @@ public class ReleaseDraft
         return "ReleaseDraft{" + "categories=" + categories + ", excludeLabels=" + excludeLabels + '}';
     }
 
-    public static ReleaseDraft load( InputStream inputStream )
+    public static ReleaseDraft load(InputStream inputStream)
         throws IOException
     {
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        return objectMapper.readValue( inputStream, ReleaseDraft.class );
+        return objectMapper.readValue(inputStream, ReleaseDraft.class);
     }
-
 }
