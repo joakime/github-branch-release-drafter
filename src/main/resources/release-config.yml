@@ -21,7 +21,7 @@ categories:
     labels:
       - dependencies
   - title: ":orange_book: Documentation"
-    label:
+    labels:
       - documentation
 exclude-labels:
   - reverted

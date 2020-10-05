@@ -19,30 +19,16 @@
 package net.webtide.github.releasedrafter;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
 import java.io.Reader;
-import java.io.StringWriter;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import net.webtide.github.releasedrafter.logging.Logging;
-import net.webtide.github.releasedrafter.release.Category;
-import net.webtide.github.releasedrafter.release.GHReleaseFinder;
-import net.webtide.github.releasedrafter.release.ReleaseDraft;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.github.GHBranch;
 import org.kohsuke.github.GHCommit;
-import org.kohsuke.github.GHContent;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHRef;
 import org.kohsuke.github.GHRelease;
@@ -67,7 +53,6 @@ public class Main
         try
         {
             GitHub github = GitHubUtil.smartConnect();
-
             GitHubUtil.showCurrentRateLimit(github);
 
             String eventType = System.getenv("GITHUB_EVENT_NAME");
@@ -192,156 +177,24 @@ public class Main
             throw new RuntimeException("No GITHUB_EVENT_PATH env value found");
         }
 
+        String draftRepoName = System.getenv("INPUT_DRAFT_REPO");
+
         Path eventPath = Paths.get(eventPathEnv);
         try (Reader reader = Files.newBufferedReader(eventPath))
         {
             GHEventPayload.Push push = github.parseEventPayload(reader, GHEventPayload.Push.class);
 
-            // What target commitish is this push on?
             String repoName = push.getRepository().getFullName();
-            String targetCommitish = push.getRef();
 
             GHRepository repo = github.getRepository(repoName);
-
-            // What was the last release (non-draft) on this commitish?
-            GHRelease lastRelease = GHReleaseFinder.findLastReleaseOn(repo, targetCommitish);
-            Date dateOfLastRelease = getDateOfLastRelease(repo, lastRelease, targetCommitish);
-
-            // Find the latest active Draft for this commitish
-            GHRelease draft = GHReleaseFinder.getActiveDraft(repo, targetCommitish);
-
-            // Query the pull requests to find the change set.
-            GHCommit headCommit = repo.getCommit(push.getHead());
-            Date dateTo = headCommit.getCommitDate();
-            int maxPullRequestsToSearchThrough = 400; // TODO: this should be configurable
-
-            List<ChangeEntry> changeSet = QueryPullRequests.findClosedAndMergedPullRequests(repo, targetCommitish, dateOfLastRelease, dateTo, maxPullRequestsToSearchThrough);
-
-            // FIXME: base this off the yaml template / ReleaseDraft effort
-            Map<String, String> props = new HashMap<>();
-            props.put("repoName", repoName);
-            props.put("push.ref", push.getRef());
-            props.put("push.headCommit", push.getHead());
-            props.put("lastRelease.tagName", (lastRelease != null) ? lastRelease.getTagName() : "");
-            props.put("lastRelease.publishedAt", (lastRelease != null) ? lastRelease.getPublished_at().toString() : "");
-            props.put("priorRelease.date", dateOfLastRelease.toString());
-            props.put("dateTo", dateTo.toString());
-
-            updateReleaseDraft(repo, draft, changeSet, push.getRef(), props);
-        }
-    }
-
-    private static void updateReleaseDraft(GHRepository repo, GHRelease draft, List<ChangeEntry> changeSet, String branchRef, Map<String, String> props) throws IOException
-    {
-        try (StringWriter bodyWriter = new StringWriter();
-             PrintWriter out = new PrintWriter(bodyWriter))
-        {
-            out.printf("## Release %s%n", branchRef);
-            for (Map.Entry<String, String> entry : props.entrySet())
+            GHRepository draftRepo = repo;
+            if (StringUtils.isNotBlank(draftRepoName))
             {
-                out.printf(" * %s: %s%n", entry.getKey(), entry.getValue());
+                draftRepo = github.getRepository(draftRepoName);
             }
 
-            out.println();
-
-            ReleaseDraft releaseDraft = loadReleaseDraft(repo, branchRef);
-
-            if (releaseDraft == null)
-            {
-                out.printf("## %,d Changes Found%n", changeSet.size());
-                for (ChangeEntry change : changeSet)
-                {
-                    out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
-                }
-            }
-            else
-            {
-                for (Category category : releaseDraft.getCategories())
-                {
-                    List<ChangeEntry> subset = changeSet.stream()
-                        .filter(ChangeEntry::isAvailable)
-                        .filter((change) -> !Collections.disjoint(change.getLabels(), category.getLabels()))
-                        .sorted(Comparator.comparingLong((c) -> c.getDate().getTime()))
-                        .collect(Collectors.toList());
-
-                    if (subset.isEmpty())
-                        continue; // skip this category
-
-                    out.printf("## %s%n", category.getTitle());
-                    for (ChangeEntry change : subset)
-                    {
-                        out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
-                        change.setAvailable(false); // disable this change from other categories
-                    }
-                }
-            }
-
-            out.flush();
-            // Only update once all of the release body has been successfully generated
-            draft.update().body(bodyWriter.toString()).update();
-            System.out.println("Updated draft: " + draft);
+            GithubDraftUpdate githubDraftUpdate = new GithubDraftUpdate();
+            githubDraftUpdate.update(github, repo, draftRepo, push.getRef(), push.getHead());
         }
-    }
-
-    private static ReleaseDraft loadReleaseDraft(GHRepository repo, String ref)
-    {
-        String ghConfigResource = ".github/release-config.yml";
-        try
-        {
-            GHContent drafterContent = repo.getFileContent(ghConfigResource, ref);
-            if (drafterContent.isFile())
-            {
-                try (InputStream input = drafterContent.read())
-                {
-                    ReleaseDraft releaseDraft = ReleaseDraft.load(input);
-                    return releaseDraft;
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            // Not found in GitHub, use default
-            LOG.debug("Not found on github: {}", ghConfigResource, e);
-        }
-
-        String jarResource = "release-config.yml";
-
-        URL url = Main.class.getClassLoader().getResource(jarResource);
-        if (url != null)
-        {
-            try (InputStream input = url.openStream())
-            {
-                ReleaseDraft releaseDraft = ReleaseDraft.load(input);
-                return releaseDraft;
-            }
-            catch (IOException e)
-            {
-                LOG.debug("Unable to find resource: {}", jarResource, e);
-            }
-        }
-
-        // TODO: create raw ReleaseDraft in code?
-        return null;
-    }
-
-    private static Date getDateOfLastRelease(GHRepository repo, GHRelease lastRelease, String targetCommitish) throws IOException
-    {
-        if (lastRelease != null)
-        {
-            return lastRelease.getPublished_at();
-        }
-
-        // TODO: if there is no last release, we should find a reasonable Date to
-        //       limit the search of pull requests from.
-        //       This can either be the start of the branch (first commit in branch)
-        //       or based on some kind of information present in the draft below
-        //       which would let the devs manage the "last release" within the draft
-        //       itself with some kind of parseable text.
-
-        GHBranch branch = repo.getBranch(NameUtil.toBranchName(targetCommitish));
-        // TODO: we have a branch, we should be able to query git to find the first branch point
-
-        // Fallback to Repository Creation Date
-        return repo.getCreatedAt();
     }
 }

@@ -7,6 +7,10 @@ branding:
   icon: droplet
   color: green
 inputs:
+  draft_repo:
+    description: |
+      The name of the repository to create the draft release in
+    required: false
   name:
     description: |
       The name that will be used in the GitHub release that's created or updated.
