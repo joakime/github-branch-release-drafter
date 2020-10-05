@@ -1,0 +1,43 @@
+query(
+  $name: String!
+  $owner: String!
+  $ref: String!
+  ){
+  repository(name: $name, owner: $owner) {
+    owner {
+      login
+    },
+    name,
+    pullRequests(
+      baseRefName: $ref,
+      last: 15,
+      states: MERGED,
+      orderBy: {field:UPDATED_AT, direction:ASC}
+    ) {
+      totalCount,
+      pageInfo {
+        hasNextPage,
+        endCursor
+      }
+      nodes {
+        number,
+        title,
+        baseRefName,
+        updatedAt,
+        merged,
+        mergedAt,
+        mergedBy {
+          login
+        }
+        labels(last:10) {
+          nodes {
+            name
+          }
+        }
+        author {
+          login
+        }
+      }
+    }
+  }
+}
