@@ -10,7 +10,9 @@ WORKDIR /app
 # Copy build script and version of github-branch-release-drafter that docker should look for / use
 COPY version.txt build.sh mvnw pom.xml header-template-java.txt /app/build/
 # Copy Build Tool Wrapper
-COPY .mvn/wrapper/* /app/build/.mvn/wrapper/
+COPY .mvn/ /app/build/.mvn/
+# COPY .mvn/wrapper/* /app/build/.mvn/wrapper/
+RUN ls -l /app/build/.mvn/
 # Copy Source
 COPY src /app/build/src/
 RUN /app/build/build.sh
