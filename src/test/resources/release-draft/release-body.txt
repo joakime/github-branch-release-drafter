@@ -1,0 +1,14 @@
+## What’s Changed in 10.0.0
+
+## 🚀 Features
+
+- New BAR feature for version 10 @joakime (#9)
+- Adding Zed to 10 onwards. @joakime (#8)
+- Adding New Text File: `foo.txt` @joakime (#6)
+- Adding 4-Bar @joakime (#5)
+- Adding more `bar` @joakime (#3)
+- Adding bar.txt @joakime (#2)
+
+## 🐛 Bug Fixes
+
+- Fixing Three/Bar issue. @joakime (#4)

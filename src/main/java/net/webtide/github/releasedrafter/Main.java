@@ -59,14 +59,6 @@ public class Main
             try (Reader reader = Files.newBufferedReader(eventPath))
             {
                 GHEventPayload.Push push = github.parseEventPayload( reader, GHEventPayload.Push.class);
-                LOG.info( "push: {}", push );
-                push.getRepository().listReleases()
-                    .toList().stream()
-                    .forEach( ghRelease -> LOG.info( "ghRelease: name: {}, tagName: {}, body: {}, targetCommitish: {}",
-                                                     ghRelease.getName(),
-                                                     ghRelease.getTagName(),
-                                                     ghRelease.getBody(),
-                                                     ghRelease.getTargetCommitish()));
             }
 
 

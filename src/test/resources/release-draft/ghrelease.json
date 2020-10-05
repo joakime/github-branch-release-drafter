@@ -1,0 +1,41 @@
+{
+  "url": "https://api.github.com/repos/joakime/experiments-with-release-drafter/releases/32012486",
+  "assets_url": "https://api.github.com/repos/joakime/experiments-with-release-drafter/releases/32012486/assets",
+  "upload_url": "https://uploads.github.com/repos/joakime/experiments-with-release-drafter/releases/32012486/assets{?name,label}",
+  "html_url": "https://github.com/joakime/experiments-with-release-drafter/releases/tag/untagged-b3ed16c9f54fe005a16b",
+  "id": 32012486,
+  "node_id": "MDc6UmVsZWFzZTMyMDEyNDg2",
+  "tag_name": "9.4.32",
+  "target_commitish": "jetty-9.4.x",
+  "name": "9.4.32",
+  "draft": true,
+  "author": {
+    "login": "github-actions[bot]",
+    "id": 41898282,
+    "node_id": "MDM6Qm90NDE4OTgyODI=",
+    "avatar_url": "https://avatars2.githubusercontent.com/in/15368?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/github-actions%5Bbot%5D",
+    "html_url": "https://github.com/apps/github-actions",
+    "followers_url": "https://api.github.com/users/github-actions%5Bbot%5D/followers",
+    "following_url": "https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}",
+    "gists_url": "https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/github-actions%5Bbot%5D/subscriptions",
+    "organizations_url": "https://api.github.com/users/github-actions%5Bbot%5D/orgs",
+    "repos_url": "https://api.github.com/users/github-actions%5Bbot%5D/repos",
+    "events_url": "https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/github-actions%5Bbot%5D/received_events",
+    "type": "Bot",
+    "site_admin": false
+  },
+  "prerelease": false,
+  "created_at": "2020-09-30T20:30:55Z",
+  "published_at": null,
+  "assets": [
+
+  ],
+  "tarball_url": null,
+  "zipball_url": null,
+  "body": "## What’s Changed in 10.0.0\r\n\r\n## 🚀 Features\r\n\r\n- New BAR feature for version 10 @joakime (#9)\r\n- Adding Zed to 10 onwards. @joakime (#8)\r\n- Adding New Text File: `foo.txt` @joakime (#6)\r\n- Adding 4-Bar @joakime (#5)\r\n- Adding more `bar` @joakime (#3)\r\n- Adding bar.txt @joakime (#2)\r\n\r\n## 🐛 Bug Fixes\r\n\r\n- Fixing Three/Bar issue. @joakime (#4)\r\n"
+}
