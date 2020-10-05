@@ -18,9 +18,15 @@
 
 package net.webtide.github.releasedrafter;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,5 +54,21 @@ public class NameUtilTest
     public void testBadSha1(String sample)
     {
         assertFalse(NameUtil.isSha1(sample), "isSha1(" + sample + ")==BAD");
+    }
+
+    public static Stream<Arguments> refSamples()
+    {
+        return Stream.of(
+            Arguments.of("refs/heads/main", "main"),
+            Arguments.of("master", "master"),
+            Arguments.of("refs/heads/jetty-9.4.x", "jetty-9.4.x")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("refSamples")
+    public void testToBranchName(String sample, String expected)
+    {
+        assertThat("Ref name [" + sample + "]", NameUtil.toBranchName(sample), is(expected));
     }
 }

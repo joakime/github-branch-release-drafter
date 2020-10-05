@@ -40,7 +40,9 @@ public class EventHandlerTest extends AbstractGitHubTest
         {
             GHEventPayload.Push push = github.parseEventPayload(reader, GHEventPayload.Push.class);
             assertNotNull(push, "GH Event Push parse should not have been null");
-            assertEquals("joakime/bogus-repo", push.getRepository().getFullName());
+            assertEquals("joakime/bogus-repo", push.getRepository().getFullName(), "Repo full name");
+            assertEquals("refs/heads/master", push.getRef(), "Push ref");
+            assertEquals("49e261a9e014543668539485b65f7bdccbf70bc5", push.getHead(), "Head commitish");
         }
     }
 }

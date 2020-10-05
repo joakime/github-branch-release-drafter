@@ -19,14 +19,19 @@
 package net.webtide.github.releasedrafter;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import net.webtide.github.releasedrafter.logging.Logging;
+import net.webtide.github.releasedrafter.release.GHReleaseFinder;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.github.GHBranch;
 import org.kohsuke.github.GHCommit;
 import org.kohsuke.github.GHEventPayload;
@@ -48,20 +53,37 @@ public class Main
 
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] commandLine) {
+    public static void main(String[] commandLine)
+    {
         try
         {
             GitHub github = GitHubUtil.smartConnect();
 
             GitHubUtil.showCurrentRateLimit(github);
 
-            Path eventPath = Paths.get(System.getenv("GITHUB_EVENT_PATH"));
-            try (Reader reader = Files.newBufferedReader(eventPath))
+            String eventType = System.getenv("GITHUB_EVENT_NAME");
+            if (eventType.equalsIgnoreCase("push"))
             {
-                GHEventPayload.Push push = github.parseEventPayload( reader, GHEventPayload.Push.class);
+                Main.handlePushEvent(github);
             }
+            else
+            {
+                Main.handleInfoDump(github, commandLine);
 
+                System.err.println("Skipping Execution: Unrecognized Github Event Type: [" + eventType + "]");
+                System.exit(0);
+            }
+        }
+        catch (IOException e)
+        {
+            LOG.warn("Oops", e);
+        }
+    }
 
+    private static void handleInfoDump(GitHub github, String[] commandLine) throws IOException
+    {
+        try
+        {
             Args args = new Args(commandLine);
             boolean showBranches = args.containsKey("show-branches");
             boolean showReleases = args.containsKey("show-releases");
@@ -151,11 +173,84 @@ public class Main
             System.err.println("Usage: release-drafter.jar [options]");
             System.exit(-1);
         }
-        catch (IOException e)
+    }
+
+    private static void handlePushEvent(GitHub github) throws IOException
+    {
+        String eventPathEnv = System.getenv("GITHUB_EVENT_PATH");
+        if (StringUtils.isBlank(eventPathEnv))
         {
-            LOG.warn("Oops", e);
+            throw new RuntimeException("No GITHUB_EVENT_PATH env value found");
+        }
+
+        Path eventPath = Paths.get(eventPathEnv);
+        try (Reader reader = Files.newBufferedReader(eventPath))
+        {
+            GHEventPayload.Push push = github.parseEventPayload(reader, GHEventPayload.Push.class);
+
+            // What target commitish is this push on?
+            String repoName = push.getRepository().getFullName();
+            String targetCommitish = push.getRef();
+
+            GHRepository repo = github.getRepository(repoName);
+
+            // What was the last release (non-draft) on this commitish?
+            Date dateOfLastRelease = getDateOfLastRelease(repo, targetCommitish);
+
+            // Find the latest active Draft for this commitish
+            GHRelease draft = GHReleaseFinder.getActiveDraft(repo, targetCommitish);
+
+            // Query the pull requests to find the change set.
+            GHCommit headCommit = repo.getCommit(push.getHead());
+            Date dateTo = headCommit.getCommitDate();
+            int maxPullRequestsToSearchThrough = 400;
+
+            List<ChangeEntry> changeSet = QueryPullRequests.findClosedAndMergedPullRequests(repo, targetCommitish, dateOfLastRelease, dateTo, maxPullRequestsToSearchThrough);
+
+            // FIXME: base this off the yaml template
+            try (StringWriter bodyWriter = new StringWriter();
+                 PrintWriter out = new PrintWriter(bodyWriter))
+            {
+                out.printf("## Release %s%n", targetCommitish);
+                out.printf(" * repo: %s%n", repoName);
+                out.printf(" * dateOfLastRelease: %s%n", dateOfLastRelease.toString());
+                out.printf(" * head-commit: %s%n", push.getHead());
+                out.println();
+
+                out.printf("## %,d Changes Found$%n", changeSet.size());
+                for (ChangeEntry change : changeSet)
+                {
+                    out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
+                }
+
+                out.flush();
+                draft.update().body(bodyWriter.toString()).update();
+                System.out.println("Updated draft: " + draft);
+            }
         }
     }
 
+    private static Date getDateOfLastRelease(GHRepository repo, String targetCommitish) throws IOException
+    {
+        // What was the last release (non-draft) on this commitish?
+        GHRelease lastRelease = GHReleaseFinder.findLastReleaseOn(repo, targetCommitish);
 
+        if (lastRelease != null)
+        {
+            return lastRelease.getPublished_at();
+        }
+
+        // TODO: if there is no last release, we should find a reasonable Date to
+        //       limit the search of pull requests from.
+        //       This can either be the start of the branch (first commit in branch)
+        //       or based on some kind of information present in the draft below
+        //       which would let the devs manage the "last release" within the draft
+        //       itself with some kind of parseable text.
+
+        GHBranch branch = repo.getBranch(NameUtil.toBranchName(targetCommitish));
+        // TODO: we have a branch, we should be able to query git to find the first branch point
+
+        // Fallback to Repository Creation Date
+        return repo.getCreatedAt();
+    }
 }

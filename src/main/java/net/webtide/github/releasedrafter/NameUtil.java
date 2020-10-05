@@ -23,11 +23,20 @@ import java.util.regex.Pattern;
 
 public final class NameUtil
 {
+    private static final String REFSHEAD = "refs/heads/";
+
     public static String toLowerCaseUS(String str)
     {
         if (str == null)
             return "";
         return str.toLowerCase(Locale.US);
+    }
+
+    public static String toBranchName(String ref)
+    {
+        if (ref.startsWith(REFSHEAD))
+            return ref.substring(REFSHEAD.length());
+        return ref;
     }
 
     public static boolean isSha1(String str)
