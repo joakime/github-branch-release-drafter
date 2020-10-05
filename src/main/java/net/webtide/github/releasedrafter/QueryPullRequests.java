@@ -147,6 +147,7 @@ public class QueryPullRequests
                 }
                 else
                 {
+                    hits.add(ChangeEntryBuilder.from(repo, pullRequest));
                     foundFirstEntryByDate = true;
                 }
             }
@@ -167,7 +168,8 @@ public class QueryPullRequests
                 // Refresh the PullRequest so we get access to the merge information.
                 // (which isn't present in the results from GHPullRequestQueryBuilder)
                 // We do this as late as possible to reduce the number of API calls we make.
-                pullRequest.refresh();
+                // TODO: review if still needed
+                // pullRequest.refresh();
                 if (!pullRequest.isMerged())
                 {
                     LOG.debug("Skipping unmerged PR #{} - {}", pullRequest.getNumber(), pullRequest.getTitle());
