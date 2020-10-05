@@ -1,4 +1,8 @@
 FROM adoptopenjdk/openjdk11:alpine
+
+# We should make sure we publish the below to github packages
+# https://docs.github.com/en/free-pro-team@latest/actions/guides/publishing-docker-images
+
 LABEL "repository"="https://github.com/joakime/github-branch-release-drafter"
 LABEL "homepage"="https://github.com/joakime/github-branch-release-drafter"
 LABEL "maintainer"="Joakim Erdfelt"
