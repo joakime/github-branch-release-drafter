@@ -21,6 +21,7 @@ package net.webtide.github.api;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -33,7 +34,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.StringUtils;
@@ -49,6 +53,19 @@ public class GitHubApi
     private final HttpClient client;
     private final HttpRequest.Builder baseRequest;
     private final Gson gson;
+
+    private GitHubApi(String oauthToken)
+    {
+        this.apiURI = URI.create("https://api.github.com");
+
+        this.client = HttpClient.newBuilder()
+            .connectTimeout(Duration.of(2, ChronoUnit.SECONDS))
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build();
+        this.baseRequest = HttpRequest.newBuilder()
+            .header("Authorization", "Bearer " + oauthToken);
+        this.gson = newGson();
+    }
 
     public static GitHubApi connect()
     {
@@ -93,19 +110,6 @@ public class GitHubApi
         return new GitHubApi(null);
     }
 
-    private GitHubApi(String oauthToken)
-    {
-        this.apiURI = URI.create("https://api.github.com");
-
-        this.client = HttpClient.newBuilder()
-            .connectTimeout(Duration.of(2, ChronoUnit.SECONDS))
-            .followRedirects(HttpClient.Redirect.NEVER)
-            .build();
-        this.baseRequest = HttpRequest.newBuilder()
-            .header("Authorization", "Bearer " + oauthToken);
-        this.gson = newGson();
-    }
-
     /**
      * Create a Gson suitable for parsing Github JSON responses
      *
@@ -115,6 +119,7 @@ public class GitHubApi
     {
         return new GsonBuilder()
             .registerTypeAdapter(ZonedDateTime.class, new ISO8601TypeAdapter())
+            .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
             .create();
     }
 
@@ -164,5 +169,70 @@ public class GitHubApi
         if (response.statusCode() != 200)
             throw new GitHubApiException("Unable to post graphql: status code: " + response.statusCode());
         return response.body();
+    }
+
+    public Releases listReleases(String repoOwner, String repoName, int resultsPerPage, int pageNum) throws IOException, InterruptedException
+    {
+        Query query = new Query();
+        query.put("per_page", String.valueOf(resultsPerPage));
+        query.put("page", String.valueOf(pageNum));
+
+        URI endpointURI = apiURI.resolve(String.format("/repos/%s/%s/releases?%s", repoOwner, repoName, query.toEncodedQuery()));
+
+        HttpRequest request = baseRequest.copy()
+            .GET()
+            .uri(endpointURI)
+            .header("Accept", "application/vnd.github.v3+json")
+            .build();
+        HttpResponse<String> response = client.send(request, responseInfo -> HttpResponse.BodySubscribers.ofString(UTF_8));
+        if (response.statusCode() != 200)
+            throw new GitHubApiException("Unable to get releases: status code: " + response.statusCode());
+        saveBody(response.body(), "list-releases-%s-%s-%d-%d.json", repoOwner, repoName, resultsPerPage, pageNum);
+        return gson.fromJson(response.body(), Releases.class);
+    }
+
+    public Stream<Release> streamReleases(String repoOwner, String repoName)
+    {
+        return streamReleases(repoOwner, repoName, 20);
+    }
+
+    public Stream<Release> streamReleases(String repoOwner, String repoName, int resultsPerPage)
+    {
+        return StreamSupport.stream(new ListReleasesSpliterator(this, repoOwner, repoName, resultsPerPage), false);
+    }
+
+    private void saveBody(String body, String format, Object... args)
+    {
+        Path targetDir = Paths.get("target");
+        if (Files.exists(targetDir) && Files.isDirectory(targetDir))
+        {
+            Path outputPath = targetDir.resolve(String.format(format, args));
+            try
+            {
+                LOG.debug("Writing body (size={}) to {}", body.length(), outputPath);
+                Files.writeString(outputPath, body);
+            }
+            catch (IOException e)
+            {
+            }
+        }
+    }
+
+    static class Query extends HashMap<String, String>
+    {
+        String toEncodedQuery()
+        {
+            StringBuilder ret = new StringBuilder();
+            boolean delim = false;
+            for (Entry<String, String> entry : entrySet())
+            {
+                if (delim)
+                    ret.append('&');
+                ret.append(entry.getKey()).append('=');
+                ret.append(URLEncoder.encode(entry.getValue(), UTF_8));
+                delim = true;
+            }
+            return ret.toString();
+        }
     }
 }

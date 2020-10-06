@@ -49,6 +49,16 @@ public class RateLimits
         {
             return reset;
         }
+
+        @Override
+        public String toString()
+        {
+            long resetInSecs = reset - (System.currentTimeMillis() / 1000);
+            String human = (resetInSecs > 0) ? String.format("%,ds", resetInSecs) :
+                String.format("%,ds ago", resetInSecs * -1);
+            return String.format("Rate[u:%d/l:%d(r:%d),reset=%s]",
+                used, limit, remaining, human);
+        }
     }
 
     protected Map<String, Rate> resources = new HashMap<>();
@@ -62,5 +72,15 @@ public class RateLimits
     public Rate getRate()
     {
         return rate;
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder("RateLimits[");
+        sb.append("rate=").append(rate);
+        sb.append(", [").append(resources).append("]");
+        sb.append("]");
+        return sb.toString();
     }
 }

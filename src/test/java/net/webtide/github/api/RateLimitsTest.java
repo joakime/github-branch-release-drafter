@@ -19,7 +19,6 @@
 package net.webtide.github.api;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,8 +36,9 @@ public class RateLimitsTest
             "\"code_scanning_upload\":{\"limit\":500,\"used\":0,\"remaining\":500,\"reset\":1601996886}}," +
             "\"rate\":{\"limit\":5000,\"used\":0,\"remaining\":5000,\"reset\":1601996886}}";
 
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Gson gson = GitHubApi.newGson();
         RateLimits rateLimits = gson.fromJson(rawjson, RateLimits.class);
+        System.out.println(rateLimits);
         assertThat(rateLimits.getRate().getLimit(), is(5000));
         assertThat(rateLimits.getResourceLimit("graphql").getRemaining(), is(5000));
     }

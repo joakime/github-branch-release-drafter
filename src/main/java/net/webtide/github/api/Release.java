@@ -20,26 +20,32 @@ package net.webtide.github.api;
 
 import java.time.ZonedDateTime;
 
-public class User
+public class Release
 {
-    protected String login;
-    protected String type;
+    protected int id;
+    protected String tagName;
+    protected String targetCommitish;
     protected String name;
-    protected String company;
-    protected String location;
-    protected String email;
-    protected String bio;
+    protected String body;
+    protected boolean draft;
+    protected boolean prerelease;
+    protected User author;
     protected ZonedDateTime createdAt;
-    protected ZonedDateTime updatedAt;
+    protected ZonedDateTime publishedAt;
 
-    public String getLogin()
+    public int getId()
     {
-        return login;
+        return id;
     }
 
-    public String getType()
+    public String getTagName()
     {
-        return type;
+        return tagName;
+    }
+
+    public String getTargetCommitish()
+    {
+        return targetCommitish;
     }
 
     public String getName()
@@ -47,24 +53,24 @@ public class User
         return name;
     }
 
-    public String getCompany()
+    public String getBody()
     {
-        return company;
+        return body;
     }
 
-    public String getLocation()
+    public boolean isDraft()
     {
-        return location;
+        return draft;
     }
 
-    public String getEmail()
+    public boolean isPrerelease()
     {
-        return email;
+        return prerelease;
     }
 
-    public String getBio()
+    public User getAuthor()
     {
-        return bio;
+        return author;
     }
 
     public ZonedDateTime getCreatedAt()
@@ -72,8 +78,8 @@ public class User
         return createdAt;
     }
 
-    public ZonedDateTime getUpdatedAt()
+    public ZonedDateTime getPublishedAt()
     {
-        return updatedAt;
+        return publishedAt;
     }
 }

@@ -26,11 +26,15 @@ import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class GitHubApiTest
 {
+    private static final String PROJECT_OWNER = "joakime";
+    private static final String PROJECT_REPO = "github-branch-release-drafter";
+
     @Test
     public void testRateLimits() throws IOException, InterruptedException
     {
@@ -53,11 +57,20 @@ public class GitHubApiTest
     }
 
     @Test
+    public void testListReleases() throws IOException, InterruptedException
+    {
+        GitHubApi github = GitHubApi.connect();
+        Releases releases = github.listReleases(PROJECT_OWNER, PROJECT_REPO, 10, 1);
+
+        assertThat(releases.size(), greaterThanOrEqualTo(1));
+        assertThat("release.get(0)", releases.get(0).getAuthor().getLogin(), notNullValue());
+    }
+
+    @Test
     public void testGraphQL_WhoAmI() throws IOException, InterruptedException
     {
         GitHubApi github = GitHubApi.connect();
 
-        @SuppressWarnings("StringBufferReplaceableByString")
         StringBuilder whoami = new StringBuilder();
         whoami.append("query {");
         whoami.append("  viewer {");
@@ -66,6 +79,7 @@ public class GitHubApiTest
         whoami.append("}");
 
         String rawJson = github.graphql(whoami.toString());
+        System.out.println(rawJson);
 
         Gson gson = GitHubApi.newGson();
         Map<?, ?> map = gson.fromJson(rawJson, HashMap.class);
