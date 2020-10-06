@@ -186,7 +186,9 @@ public class GithubDraftUpdate
         }
         try
         {
+            ref = StringUtils.substringAfterLast(ref, "/");
             LOG.info("get releaseDraft {}, {}", draftRepoPath, ref);
+            // ref refs/heads/jetty-9.4.x -> jetty-9.4.x
             GHContent drafterContent = repo.getFileContent(draftRepoPath, ref);
             if (drafterContent.isFile())
             {
