@@ -101,7 +101,7 @@ public class ChangeEntry
 
     public void setAvailable(boolean flag)
     {
-        this.available = available;
+        this.available = flag;
     }
 
     @Override
