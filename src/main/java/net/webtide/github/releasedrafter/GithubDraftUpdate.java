@@ -119,25 +119,10 @@ public class GithubDraftUpdate
         try (StringWriter bodyWriter = new StringWriter();
              PrintWriter out = new PrintWriter(bodyWriter))
         {
-            out.printf("## Release %s%n", branchRef);
-            for (Map.Entry<String, String> entry : props.entrySet())
-            {
-                out.printf(" * %s: %s%n", entry.getKey(), entry.getValue());
-            }
-
-            out.println();
 
             ReleaseDraft releaseDraft = loadReleaseDraft(repo, branchRef);
 
-            if (releaseDraft == null)
-            {
-                out.printf("## %,d Changes Found%n", changeSet.size());
-                for (ChangeEntry change : changeSet)
-                {
-                    out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
-                }
-            }
-            else
+            if (releaseDraft != null)
             {
                 for (Category category : releaseDraft.getCategories())
                 {
@@ -150,13 +135,40 @@ public class GithubDraftUpdate
                     if (subset.isEmpty())
                         continue; // skip this category
 
+                    System.out.println(String.format("entries for category labels %s: %s", category.getLabels(), subset));
+
                     out.printf("## %s%n", category.getTitle());
-                    for (ChangeEntry change : subset)
+                    subset.stream().forEach( change ->
                     {
                         out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
                         change.setAvailable(false); // disable this change from other categories
-                    }
+                    });
                 }
+            }
+
+            // Any changeset entries with no matching categories (even ones with no labels)
+            List<ChangeEntry> unwritten = changeSet.stream()
+                .filter(ChangeEntry::isAvailable)
+                .sorted(Comparator.comparingLong((c) -> c.getDate().getTime()))
+                .collect(Collectors.toList());
+
+            System.out.println( "entries unwritten: "+ unwritten);
+
+            if (!unwritten.isEmpty())
+            {
+                out.printf("## %,d Changes Found%n", unwritten.size());
+                unwritten.stream()
+                    .forEach(change ->
+                                 out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId()));
+            }
+
+            // Add some markdown "comments" to track what was done.
+            // See https://stackoverflow.com/questions/4823468/comments-in-markdown for hokey syntax
+            out.println();
+            out.printf("[//]: # (Release %s)%n", branchRef);
+            for (Map.Entry<String, String> entry : props.entrySet())
+            {
+                out.printf("[//]: # (%s: %s)%n", entry.getKey(), entry.getValue());
             }
 
             out.flush();
@@ -168,10 +180,17 @@ public class GithubDraftUpdate
 
     private static ReleaseDraft loadReleaseDraft(GHRepository repo, String ref) throws IOException
     {
-        String ghConfigResource = ".github/release-config.yml";
+        String draftRepoPath = System.getenv("INPUT_DRAFT_CONFIG");
+        LOG.debug( "INPUT_DRAFT_CONFIG '{}'", draftRepoPath);
+        if(StringUtils.isEmpty(draftRepoPath)){
+            draftRepoPath = ".github/release-config.yml";
+        }
         try
         {
-            GHContent drafterContent = repo.getFileContent(ghConfigResource, ref);
+            // ref refs/heads/jetty-9.4.x -> jetty-9.4.x
+            ref = StringUtils.substringAfterLast(ref, "/");
+            LOG.info("get releaseDraft {}, {}", draftRepoPath, ref);
+            GHContent drafterContent = repo.getFileContent(draftRepoPath, ref);
             if (drafterContent.isFile())
             {
                 try (InputStream input = drafterContent.read())
@@ -184,7 +203,7 @@ public class GithubDraftUpdate
         catch (GHFileNotFoundException e)
         {
             // Not found in GitHub, use default
-            LOG.debug("Not found on github: {}", ghConfigResource);
+            LOG.debug("Not found on github: {}", draftRepoPath);
         }
 
         String jarResource = "release-config.yml";

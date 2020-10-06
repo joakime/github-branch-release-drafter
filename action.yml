@@ -23,6 +23,10 @@ inputs:
     description: |
       The version to be associated with the GitHub release that's created or updated.
     required: false
+  draft_config:
+    description: |
+      The location of the release template configuration file
+    required: false
 outputs:
   id:
     description: The ID of the release that was created or updated.

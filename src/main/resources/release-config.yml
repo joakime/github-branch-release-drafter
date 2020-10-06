@@ -9,6 +9,7 @@ categories:
   - title: ":heavy_plus_sign: Features and improvements"
     labels:
       - feature
+      - enhancement
       - improvement
   - title: ":mosquito: Bugs"
     labels:
