@@ -122,15 +122,7 @@ public class GithubDraftUpdate
 
             ReleaseDraft releaseDraft = loadReleaseDraft(repo, branchRef);
 
-            if (releaseDraft == null)
-            {
-                out.printf("## %,d Changes Found%n", changeSet.size());
-                for (ChangeEntry change : changeSet)
-                {
-                    out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
-                }
-            }
-            else
+            if (releaseDraft != null)
             {
                 for (Category category : releaseDraft.getCategories())
                 {
@@ -149,6 +141,21 @@ public class GithubDraftUpdate
                         out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
                         change.setAvailable(false); // disable this change from other categories
                     }
+                }
+            }
+
+            // Any changeset entries with no matching categories (even ones with no labels)
+            List<ChangeEntry> unwritten = changeSet.stream()
+                .filter(ChangeEntry::isAvailable)
+                .sorted(Comparator.comparingLong((c) -> c.getDate().getTime()))
+                .collect(Collectors.toList());
+
+            if (unwritten.size() > 0)
+            {
+                out.printf("## %,d Changes Found%n", changeSet.size());
+                for (ChangeEntry change : changeSet)
+                {
+                    out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
                 }
             }
 
