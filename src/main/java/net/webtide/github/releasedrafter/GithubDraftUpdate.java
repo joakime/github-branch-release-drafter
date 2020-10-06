@@ -119,13 +119,6 @@ public class GithubDraftUpdate
         try (StringWriter bodyWriter = new StringWriter();
              PrintWriter out = new PrintWriter(bodyWriter))
         {
-            out.printf("## Release %s%n", branchRef);
-            for (Map.Entry<String, String> entry : props.entrySet())
-            {
-                out.printf(" * %s: %s%n", entry.getKey(), entry.getValue());
-            }
-
-            out.println();
 
             ReleaseDraft releaseDraft = loadReleaseDraft(repo, branchRef);
 
@@ -157,6 +150,14 @@ public class GithubDraftUpdate
                         change.setAvailable(false); // disable this change from other categories
                     }
                 }
+            }
+
+            // Add some markdown "comments" to track what was done.
+            // See https://stackoverflow.com/questions/4823468/comments-in-markdown for hokey syntax
+            out.printf("[//]: # (Release %s)%n", branchRef);
+            for (Map.Entry<String, String> entry : props.entrySet())
+            {
+                out.printf("[//]: # (%s: %s)%n", entry.getKey(), entry.getValue());
             }
 
             out.flush();
