@@ -138,11 +138,11 @@ public class GithubDraftUpdate
                     System.out.println(String.format("entries for category labels %s: %s", category.getLabels(), subset));
 
                     out.printf("## %s%n", category.getTitle());
-                    for (ChangeEntry change : subset)
+                    subset.stream().forEach( change ->
                     {
                         out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
                         change.setAvailable(false); // disable this change from other categories
-                    }
+                    });
                 }
             }
 
@@ -154,13 +154,12 @@ public class GithubDraftUpdate
 
             System.out.println( "entries unwritten: "+ unwritten);
 
-            if (unwritten.size() > 0)
+            if (!unwritten.isEmpty())
             {
-                out.printf("## %,d Changes Found%n", changeSet.size());
-                for (ChangeEntry change : changeSet)
-                {
-                    out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId());
-                }
+                out.printf("## %,d Changes Found%n", unwritten.size());
+                unwritten.stream()
+                    .forEach(change ->
+                                 out.printf(" * %s @%s (#%d)%n", change.getTitle(), change.getAuthor(), change.getPullRequestId()));
             }
 
             // Add some markdown "comments" to track what was done.
