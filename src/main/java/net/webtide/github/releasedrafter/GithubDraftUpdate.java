@@ -135,6 +135,8 @@ public class GithubDraftUpdate
                     if (subset.isEmpty())
                         continue; // skip this category
 
+                    LOG.info( "entries for category {}/{}: {}", category.getTitle(), category.getLabels(), subset);
+
                     out.printf("## %s%n", category.getTitle());
                     for (ChangeEntry change : subset)
                     {
@@ -149,6 +151,8 @@ public class GithubDraftUpdate
                 .filter(ChangeEntry::isAvailable)
                 .sorted(Comparator.comparingLong((c) -> c.getDate().getTime()))
                 .collect(Collectors.toList());
+
+            LOG.info( "entries unwritten: {}", unwritten);
 
             if (unwritten.size() > 0)
             {
