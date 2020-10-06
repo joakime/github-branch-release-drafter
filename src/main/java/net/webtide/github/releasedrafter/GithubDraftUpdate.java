@@ -180,10 +180,13 @@ public class GithubDraftUpdate
 
     private static ReleaseDraft loadReleaseDraft(GHRepository repo, String ref) throws IOException
     {
-        String ghConfigResource = ".github/release-config.yml";
+        String draftRepoPath = System.getenv("INPUT_DRAFT_CONFIG");
+        if(StringUtils.isEmpty(draftRepoPath)){
+            draftRepoPath = ".github/release-config.yml";
+        }
         try
         {
-            GHContent drafterContent = repo.getFileContent(ghConfigResource, ref);
+            GHContent drafterContent = repo.getFileContent(draftRepoPath, ref);
             if (drafterContent.isFile())
             {
                 try (InputStream input = drafterContent.read())
@@ -196,7 +199,7 @@ public class GithubDraftUpdate
         catch (GHFileNotFoundException e)
         {
             // Not found in GitHub, use default
-            LOG.debug("Not found on github: {}", ghConfigResource);
+            LOG.debug("Not found on github: {}", draftRepoPath);
         }
 
         String jarResource = "release-config.yml";
