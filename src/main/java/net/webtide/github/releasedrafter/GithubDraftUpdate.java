@@ -135,7 +135,7 @@ public class GithubDraftUpdate
                     if (subset.isEmpty())
                         continue; // skip this category
 
-                    System.out.println(String.format("entries for category %s/%s: %s", category.getTitle(), category.getLabels(), subset));
+                    System.out.println(String.format("entries for category labels %s: %s", category.getLabels(), subset));
 
                     out.printf("## %s%n", category.getTitle());
                     for (ChangeEntry change : subset)
