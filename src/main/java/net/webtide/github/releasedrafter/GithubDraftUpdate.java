@@ -186,6 +186,7 @@ public class GithubDraftUpdate
         }
         try
         {
+            System.out.println("get releaseDraft " + draftRepoPath + ", " + ref);
             GHContent drafterContent = repo.getFileContent(draftRepoPath, ref);
             if (drafterContent.isFile())
             {
