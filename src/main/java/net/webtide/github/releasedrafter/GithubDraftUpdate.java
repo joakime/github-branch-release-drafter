@@ -154,6 +154,7 @@ public class GithubDraftUpdate
 
             // Add some markdown "comments" to track what was done.
             // See https://stackoverflow.com/questions/4823468/comments-in-markdown for hokey syntax
+            out.println();
             out.printf("[//]: # (Release %s)%n", branchRef);
             for (Map.Entry<String, String> entry : props.entrySet())
             {
