@@ -181,14 +181,15 @@ public class GithubDraftUpdate
     private static ReleaseDraft loadReleaseDraft(GHRepository repo, String ref) throws IOException
     {
         String draftRepoPath = System.getenv("INPUT_DRAFT_CONFIG");
+        LOG.debug( "INPUT_DRAFT_CONFIG {}", draftRepoPath);
         if(StringUtils.isEmpty(draftRepoPath)){
             draftRepoPath = ".github/release-config.yml";
         }
         try
         {
+            // ref refs/heads/jetty-9.4.x -> jetty-9.4.x
             ref = StringUtils.substringAfterLast(ref, "/");
             LOG.info("get releaseDraft {}, {}", draftRepoPath, ref);
-            // ref refs/heads/jetty-9.4.x -> jetty-9.4.x
             GHContent drafterContent = repo.getFileContent(draftRepoPath, ref);
             if (drafterContent.isFile())
             {
