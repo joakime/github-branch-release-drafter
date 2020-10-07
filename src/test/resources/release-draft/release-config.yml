@@ -1,4 +1,5 @@
 # Emoji reference: https://gitmoji.carloscuesta.me/
+name-template: 'v$RESOLVED_VERSION ⛵'
 categories:
   - title: ":boom: Breaking changes"
     labels:

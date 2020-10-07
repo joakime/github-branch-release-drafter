@@ -21,6 +21,7 @@ package net.webtide.github.releasedrafter.release;
 import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.introspector.PropertyUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -68,9 +69,13 @@ public class ReleaseDraft
     {
         Constructor constructor = new Constructor(ReleaseDraft.class);
         TypeDescription typeDescription = new TypeDescription( ReleaseDraft.class );
+        PropertyUtils propertyUtils = new PropertyUtils();
+        propertyUtils.setSkipMissingProperties(true);
+        typeDescription.setPropertyUtils(propertyUtils);
         typeDescription.substituteProperty( "exclude-labels", List.class,
                                             "getExcludeLabels", "setExcludeLabels");
-        constructor.addTypeDescription( typeDescription );
+        constructor.addTypeDescription(typeDescription);
+        constructor.setPropertyUtils(propertyUtils);
         Yaml yaml = new Yaml(constructor);
         return yaml.load( inputStream );
     }
