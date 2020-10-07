@@ -54,15 +54,16 @@
       <version>${slf4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>2.11.3</version>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>1.27</version>
     </dependency>
-    <dependency>
-      <groupId>com.vladsch.flexmark</groupId>
-      <artifactId>flexmark-all</artifactId>
-      <version>0.62.2</version>
-    </dependency>
+    <!-- see ReleaseDraftTest#release_body_parser -->
+<!--    <dependency>-->
+<!--      <groupId>com.vladsch.flexmark</groupId>-->
+<!--      <artifactId>flexmark-all</artifactId>-->
+<!--      <version>0.62.2</version>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>

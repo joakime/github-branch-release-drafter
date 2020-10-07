@@ -18,20 +18,19 @@
 
 package net.webtide.github.releasedrafter.release;
 
+import org.yaml.snakeyaml.TypeDescription;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class ReleaseDraft
 {
     private List<Category> categories;
 
-    @JsonAlias("exclude-labels")
+    //@JsonAlias("exclude-labels")
     private List<String> excludeLabels;
 
     public ReleaseDraft()
@@ -67,8 +66,12 @@ public class ReleaseDraft
     public static ReleaseDraft load(InputStream inputStream)
         throws IOException
     {
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return objectMapper.readValue(inputStream, ReleaseDraft.class);
+        Constructor constructor = new Constructor(ReleaseDraft.class);
+        TypeDescription typeDescription = new TypeDescription( ReleaseDraft.class );
+        typeDescription.substituteProperty( "exclude-labels", List.class,
+                                            "getExcludeLabels", "setExcludeLabels");
+        constructor.addTypeDescription( typeDescription );
+        Yaml yaml = new Yaml(constructor);
+        return yaml.load( inputStream );
     }
 }

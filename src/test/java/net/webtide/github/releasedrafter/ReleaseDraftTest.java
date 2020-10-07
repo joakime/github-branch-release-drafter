@@ -18,22 +18,6 @@
 
 package net.webtide.github.releasedrafter;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.stream.Collectors;
-
-import com.vladsch.flexmark.ast.BulletList;
-import com.vladsch.flexmark.ast.BulletListItem;
-import com.vladsch.flexmark.formatter.Formatter;
-import com.vladsch.flexmark.parser.Parser;
-import com.vladsch.flexmark.profile.pegdown.Extensions;
-import com.vladsch.flexmark.profile.pegdown.PegdownOptionsAdapter;
-import com.vladsch.flexmark.util.ast.Document;
-import com.vladsch.flexmark.util.data.DataHolder;
-import com.vladsch.flexmark.util.data.MutableDataSet;
-import com.vladsch.flexmark.util.sequence.BasedSequence;
 import net.webtide.github.releasedrafter.release.Category;
 import net.webtide.github.releasedrafter.release.GHReleaseFinder;
 import net.webtide.github.releasedrafter.release.ReleaseDraft;
@@ -43,6 +27,12 @@ import org.kohsuke.github.GHRelease;
 import org.kohsuke.github.GHRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -93,49 +83,49 @@ public class ReleaseDraftTest extends AbstractGitHubTest
                   ghRelease.getId());
 
     }
-
-
-    private static DataHolder OPTIONS = PegdownOptionsAdapter.flexmarkOptions(
-        Extensions.ALL
-    );
-
-    static final MutableDataSet FORMAT_OPTIONS = new MutableDataSet();
-    static {
-        FORMAT_OPTIONS.set(Parser.EXTENSIONS, Parser.EXTENSIONS.get(OPTIONS));
-    }
-
-    static final Parser PARSER = Parser.builder(OPTIONS).build();
-
-
-    @Test
-    public void release_body_parser() throws Exception
-    {
-        Path releaseBodyPath = MavenTestingUtils.getTestResourcePathFile( "release-draft/release-body.txt");
-        Document document = PARSER.parse(new String(Files.readAllBytes(releaseBodyPath)));
-
-        document.getChildren().forEach( node -> {
-            LOG.info( "node: type {} name {} chars {}",
-                                                          node.getClass(),
-                                                          node.getNodeName(),
-                                                          node.getChars());
-            if(node instanceof BulletList )
-            {
-                node.getChildren().forEach( child -> {
-                    LOG.info( "BulletList child: type {} name {} chars {}",
-                              child.getClass(),
-                              child.getNodeName(),
-                              child.getChars() );
-                } );
-                BulletListItem item = new BulletListItem();
-                item.setChars( BasedSequence.of( "FOO NEW CONTENT (#1212)"));
-                node.appendChild(item);
-            }
-        });
-
-
-        String text = Formatter.builder().build().render(document );
-        System.out.println("Body back to text");
-        System.out.println(text);
-    }
+//     MARKDOWN PARSING
+//
+//    private static DataHolder OPTIONS = PegdownOptionsAdapter.flexmarkOptions(
+//        Extensions.ALL
+//    );
+//
+//    static final MutableDataSet FORMAT_OPTIONS = new MutableDataSet();
+//    static {
+//        FORMAT_OPTIONS.set(Parser.EXTENSIONS, Parser.EXTENSIONS.get(OPTIONS));
+//    }
+//
+//    static final Parser PARSER = Parser.builder(OPTIONS).build();
+//
+//
+//    @Test
+//    public void release_body_parser() throws Exception
+//    {
+//        Path releaseBodyPath = MavenTestingUtils.getTestResourcePathFile( "release-draft/release-body.txt");
+//        Document document = PARSER.parse(new String(Files.readAllBytes(releaseBodyPath)));
+//
+//        document.getChildren().forEach( node -> {
+//            LOG.info( "node: type {} name {} chars {}",
+//                                                          node.getClass(),
+//                                                          node.getNodeName(),
+//                                                          node.getChars());
+//            if(node instanceof BulletList )
+//            {
+//                node.getChildren().forEach( child -> {
+//                    LOG.info( "BulletList child: type {} name {} chars {}",
+//                              child.getClass(),
+//                              child.getNodeName(),
+//                              child.getChars() );
+//                } );
+//                BulletListItem item = new BulletListItem();
+//                item.setChars( BasedSequence.of( "FOO NEW CONTENT (#1212)"));
+//                node.appendChild(item);
+//            }
+//        });
+//
+//
+//        String text = Formatter.builder().build().render(document );
+//        System.out.println("Body back to text");
+//        System.out.println(text);
+//    }
 
 }
