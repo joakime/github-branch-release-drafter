@@ -192,6 +192,7 @@ public class Main
             {
                 draftRepo = github.getRepository(draftRepoName);
             }
+            LOG.info("use draftRepo fullName: {}", draftRepo.getFullName());
 
             GithubDraftUpdate githubDraftUpdate = new GithubDraftUpdate();
             githubDraftUpdate.update(github, repo, draftRepo, push.getRef(), push.getHead());
