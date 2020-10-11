@@ -67,6 +67,7 @@ public class GithubDraftUpdate
             GHRepository draftRepo = repo;
             if (StringUtils.isNotBlank(draftRepoName))
             {
+                LOG.info("use draftRepoName: {}", draftRepoName);
                 draftRepo = github.getRepository(draftRepoName);
             }
 
