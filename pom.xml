@@ -31,7 +31,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
-    <github.api.version>1.116</github.api.version>
+    <github.api.version>1.123</github.api.version>
     <slf4j.version>1.7.30</slf4j.version>
     <jetty.version>9.4.31.v20200723</jetty.version>
     <jetty.test.version>5.5</jetty.test.version>
